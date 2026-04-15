@@ -1,0 +1,112 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// Definição do ENUM para status de amizade
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+// Tabela de Usuários
+model User {
+  id         String   @id @default(uuid())
+  username   String
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  email      String   @unique
+  password   String
+  avatarUrl  String?  @map("avatar_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  characters   Character[]
+  ownedTables  Table[]       @relation("GM")
+  memberships  TablePlayer[]
+  friendsSent  Friendship[]  @relation("User1")
+  friendsRecv  Friendship[]  @relation("User2")
+}
+
+// Tabela de Sistemas de RPG
+model System {
+  id          String   @id @default(uuid())
+  name        String   
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  characters  Character[]
+  tables      Table[]
+}
+
+// Tabela de Personagens (Fichas)
+model Character {
+  id         String   @id @default(uuid())
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  race       String
+  class      String
+  level      Int      @default(1)
+  attributes Json     // Dados flexíveis como HP, Atributos
+  bio        String?
+  
+  // Campo Escalar e Campo de Relação 
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  
+  systemId   String   @map("system_id")
+  system     System   @relation(fields: [systemId], references: [id])
+
+  tablePlayers TablePlayer[]
+}
+
+// Tabela de Mesas (Campanhas) [cite: 79]
+model Table {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  inviteCode  String   @unique @map("invite_code")
+  
+  // Campo Escalar e Campo de Relação para o GM
+  gmId        String   @map("gm_id")
+  gm          User     @relation("GM", fields: [gmId], references: [id])
+  
+  systemId    String   @map("system_id")
+  system      System   @relation(fields: [systemId], references: [id])
+
+  players     TablePlayer[]
+}
+
+// Tabela Intermediária (Jogadores nas Mesas)
+model TablePlayer {
+  id          String    @id @default(uuid())
+  
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id])
+  
+  tableId     String    @map("table_id")
+  table       Table     @relation(fields: [tableId], references: [id])
+  
+  characterId String    @map("character_id")
+  character   Character @relation(fields: [characterId], references: [id])
+}
+
+// Tabela de Amizades
+model Friendship {
+  id        String           @id @default(uuid())
+  status    FriendshipStatus @default(PENDING) // Uso do Enum
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user1Id   String           @map("user_id_1")
+  user1     User             @relation("User1", fields: [user1Id], references: [id])
+  
+  user2Id   String           @map("user_id_2")
+  user2     User             @relation("User2", fields: [user2Id], references: [id])
+}
