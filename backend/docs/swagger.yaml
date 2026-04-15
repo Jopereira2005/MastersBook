@@ -1,0 +1,132 @@
+openapi: 3.0.0
+info:
+  title: MastersBook API
+  version: 1.0.0
+  description: API para gerenciamento de fichas e mesas de RPG.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor Local
+
+tags:
+  - name: Users
+    description: Operações relacionadas a usuários.
+
+paths:
+  /users/register:
+    post:
+      summary: Cadastra um novo usuário
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        201:
+          description: Usuário cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuário cadastrado com sucesso!"
+                  user:
+                    $ref: '#/components/schemas/UserOutput'
+        409:
+          description: Conflito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/login:
+    post:
+      summary: Realiza o login (Email ou Username)
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        200:
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login realizado com sucesso!"
+                  user:
+                    $ref: '#/components/schemas/UserOutput'
+        401:
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RegisterInput:
+      type: object
+      required: [username, firstName, lastName, email, password]
+      properties:
+        username:
+          type: string
+          example: mr_paxe
+        firstName:
+          type: string
+          example: Paxe
+        lastName:
+          type: string
+          example: Bagre
+        email:
+          type: string
+          format: email
+          example: paxe@email.com
+        password:
+          type: string
+          format: password
+          example: "senha123"
+
+    LoginInput:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          description: email ou username
+          example: mr_paxe
+        password:
+          type: string
+          format: password
+          example: "senha123"
+
+    UserOutput:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        username:
+          type: string
+          example: mr_paxe
+        email:
+          type: string
+          example: paxe@email.com
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Mensagem de erro detalhada aqui."
