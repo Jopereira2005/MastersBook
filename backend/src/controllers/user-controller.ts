@@ -1,7 +1,7 @@
 import { response, type Request, type Response } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../database/prisma.js';
-import type { RegisterUserInput, LoginUserInput } from '../schemas/UserSchema.js';
+import type { RegisterUserInput, LoginUserInput } from '../schemas/user-schema.js';
 
 export class UserController {
   async register(req: Request<{}, {}, RegisterUserInput>, res: Response) {
@@ -14,6 +14,7 @@ export class UserController {
         return;
       }
 
+      // Hash da senha usando bcrypt
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
