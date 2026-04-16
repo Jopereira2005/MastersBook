@@ -1,13 +1,22 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user-controller.js';
 import { validate } from '../middlewares/validate-middleware.js';
-import { loginSchema, UserSchema } from '../schemas/user-schema.js';
+import { 
+  getProfileSchema, 
+  loginSchema, 
+  registerSchema,
+  updateProfileSchema,
+  deleteProfileSchema
+} from '../schemas/user-schema.js';
 
 const userRoutes = Router();
 const userController = new UserController();
 
 
-userRoutes.post('/register', validate(UserSchema), userController.register.bind(userController));
+userRoutes.post('/register', validate(registerSchema), userController.register.bind(userController));
 userRoutes.post('/login', validate(loginSchema), userController.login.bind(userController));
+userRoutes.get('/profile/:id', validate(getProfileSchema), userController.getProfileById.bind(userController));
+userRoutes.patch('/update/:id', validate(updateProfileSchema), userController.updateProfile.bind(userController));
+userRoutes.delete('/delete/:id', validate(deleteProfileSchema), userController.deleteProfile.bind(userController));
 
 export { userRoutes };
