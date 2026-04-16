@@ -72,6 +72,124 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  
+  /users/profile/{id}:
+    get:
+      summary: Retorna o perfil público do um usuário pelo ID
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID (UUID) do usuário
+      responses:
+        200:
+          description: Perfil encontrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileOutput'
+        400:
+          description: Erro de validação (ID não é um UUID)
+        404:
+          description: Usuário não encontrado
+
+  /users/update/{id}:
+    patch:
+      summary: Atualiza os dados do usuário
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID (UUID) do usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "mr_paxe"
+                firstName:
+                  type: string
+                  example: "Paxe"
+                lastName:
+                  type: string
+                  example: "Bagre"
+                avatarUrl:
+                  type: string
+                  format: uri
+                  example: "https://meu-site.com/avatar.png"
+      responses:
+        200:
+          description: Perfil atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Perfil atualizado com sucesso!"
+                  user:
+                    $ref: '#/components/schemas/UpdateOutput'
+        400:
+          description: Erro de validação
+        404:
+          description: Usuário não encontrado
+        409:
+          description: Conflito (Username já em uso)    
+
+  /users/delete/{id}:
+    delete:
+        summary: Apaga a conta de um usuário (Requer senha para confirmação)
+        tags: [Users]
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema:
+              type: string
+              format: uuid
+            description: ID (UUID) do usuário a ser apagado
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [password]
+                properties:
+                  password:
+                    type: string
+                    format: password
+                    example: "sua_senha_aqui"
+        responses:
+          200:
+            description: Perfil apagado com sucesso
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Perfil apagado com sucesso!"
+          400:
+            description: Erro de validação
+          401:
+            description: Senha incorreta
+          404:
+            description: Usuário não encontrado
 
 components:
   schemas:
@@ -91,7 +209,7 @@ components:
         email:
           type: string
           format: email
-          example: paxe@email.com
+          example: paxe@gmail.com
         password:
           type: string
           format: password
@@ -122,7 +240,50 @@ components:
           example: mr_paxe
         email:
           type: string
-          example: paxe@email.com
+          example: paxe@gmail.com
+
+    ProfileOutput:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        username:
+          type: string
+          example: mr_paxe
+        firstName:
+          type: string
+          example: Paxe
+        lastName:
+          type: string
+          example: Bagre
+        email:
+          type: string
+          example: paxe@gmail.com
+        avatarUrl:
+          type: string
+          example: https://example.com/avatar.jpg
+
+    UpdateOutput:
+      type: object
+      properties:
+        username:
+          type: string
+          example: mr_paxe
+        firstName:
+          type: string
+          example: Paxe
+        lastName:
+          type: string
+          example: Bagre
+        email:
+          type: string
+          example: paxe@gmail.com
+        avatarUrl:
+          type: string
+          format: uri
+          example: "https://meu-site.com/avatar.png"
 
     ErrorResponse:
       type: object
@@ -130,3 +291,5 @@ components:
         error:
           type: string
           example: "Mensagem de erro detalhada aqui."
+
+          
