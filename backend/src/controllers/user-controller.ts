@@ -1,7 +1,13 @@
 import { type Request, type Response } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../database/prisma.js';
-import type { RegisterUserInput, LoginUserInput, UpdateProfileInput, DeleteProfileInput } from '../schemas/user-schema.js';
+
+import type { 
+  RegisterUserInput, 
+  LoginUserInput, 
+  UpdateProfileInput, 
+  DeleteProfileInput 
+} from '../schemas/user-schema.js';
 
 export class UserController {
   async register(req: Request<{}, {}, RegisterUserInput>, res: Response) {
