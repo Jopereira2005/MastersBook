@@ -141,7 +141,7 @@ paths:
                     type: string
                     example: "Perfil atualizado com sucesso!"
                   user:
-                    $ref: '#/components/schemas/UpdateOutput'
+                    $ref: '#/components/schemas/UpdateProfileOutput'
         400:
           description: Erro de validação
         404:
@@ -236,7 +236,7 @@ paths:
                     hp: 50
                 bio:
                   type: string
-                  example: "Um guerreiro valente que se tornou lendário após a batalha contra o Balrog."
+                  example: "Um guerreiro valente que se tornou lendário após a batalha contra o Baiacu."
                 avatarUrl:
                   type: string
                   format: uri
@@ -264,11 +264,144 @@ paths:
                     type: object
                     # Aqui o Swagger vai mostrar os dados da ficha recém-criada
         400:
-          description: Erro de validação (Zod) - Faltam campos obrigatórios ou formatos inválidos
+          description: Erro de validação - Faltam campos obrigatórios ou formatos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: Usuário ou Sistema de RPG não encontrado no banco de dados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Erro interno no servidor
+
+  /characters/update/{id}:
+    patch:
+      summary: Atualiza dados de uma ficha (Ex: Alterar HP durante a mesa)
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da ficha do personagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level:
+                  type: integer
+                  example: 5
+                attributes:
+                  type: object
+                  description: Envie apenas os atributos que deseja alterar. Eles serão mesclados com os atuais.
+                  example:
+                    hp: 35
+                    mana: 10
+      responses:
+        200:
+          description: Ficha atualizada com sucesso
+        400:
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Ficha não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /characters/{id}:
+    get:
+      summary: Busca os dados completos de uma ficha específica
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da ficha de personagem
+      responses:
+        200:
+          description: Ficha encontrada com sucesso
+        400:
+          description: Erro de validação (ID inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Ficha não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /characters/user/{userId}:
+    get:
+      summary: Lista todas as fichas de um usuário específico
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do usuário (User)
+      responses:
+        200:
+          description: Lista de fichas retornada com sucesso (Pode ser um array vazio)
+
+  /characters/delete/{id}:
+   delete:
+      summary: Apaga permanentemente uma ficha do banco de dados
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da ficha a ser apagada
+      responses:
+        200:
+          description: Ficha apagada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ficha apagada com sucesso!"
+        400:
+          description: Erro de validação (ID inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Ficha não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 
+
 components:
   schemas:
     RegisterInput:
@@ -343,7 +476,7 @@ components:
           type: string
           example: https://example.com/avatar.jpg
 
-    UpdateOutput:
+    UpdateProfileOutput:
       type: object
       properties:
         username:
