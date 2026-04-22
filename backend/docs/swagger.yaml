@@ -151,28 +151,28 @@ paths:
 
   /users/delete/{id}:
     delete:
-        summary: Apaga a conta de um usuário (Requer senha para confirmação)
-        tags: [Users]
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema:
-              type: string
-              format: uuid
-            description: ID (UUID) do usuário a ser apagado
-        requestBody:
+      summary: Apaga a conta de um usuário (Requer senha para confirmação)
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [password]
-                properties:
-                  password:
-                    type: string
-                    format: password
-                    example: "sua_senha_aqui"
+          schema:
+            type: string
+            format: uuid
+          description: ID (UUID) do usuário a ser apagado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  format: password
+                  example: "sua_senha_aqui"
         responses:
           200:
             description: Perfil apagado com sucesso
@@ -191,6 +191,84 @@ paths:
           404:
             description: Usuário não encontrado
 
+  /characters/create:
+    post:
+      summary: Cria uma nova ficha de personagem
+      tags: [Characters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - race
+                - class
+                - attributes
+                - userId
+                - systemId
+              properties:
+                firstName:
+                  type: string
+                  example: "Sir Paxe"
+                lastName:
+                  type: string
+                  example: "o Bagre"
+                race:
+                  type: string
+                  example: "tritão"
+                class:
+                  type: string
+                  example: "Guerreiro"
+                level:
+                  type: integer
+                  example: 20
+                attributes:
+                  type: object
+                  description: JSON flexível contendo os atributos específicos do sistema de RPG.
+                  example: 
+                    inteligencia: 20
+                    sabedoria: 18
+                    forca: 200
+                    mana: 100
+                    hp: 50
+                bio:
+                  type: string
+                  example: "Um guerreiro valente que se tornou lendário após a batalha contra o Balrog."
+                avatarUrl:
+                  type: string
+                  format: uri
+                  example: "https://meu-site.com/sir_paxe.png"
+                userId:
+                  type: string
+                  format: uuid
+                  example: "COLE_O_ID_DO_SEU_USUARIO_AQUI"
+                systemId:
+                  type: string
+                  format: uuid
+                  example: "COLE_O_ID_DO_SISTEMA_DND_AQUI"
+      responses:
+        201:
+          description: Ficha criada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ficha criada com sucesso!"
+                  character:
+                    type: object
+                    # Aqui o Swagger vai mostrar os dados da ficha recém-criada
+        400:
+          description: Erro de validação (Zod) - Faltam campos obrigatórios ou formatos inválidos
+        404:
+          description: Usuário ou Sistema de RPG não encontrado no banco de dados
+        500:
+          description: Erro interno no servidor
 components:
   schemas:
     RegisterInput:
