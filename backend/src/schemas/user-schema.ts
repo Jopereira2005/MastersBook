@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-// ==========================================
-// Schema Principal / Cadastro
-// ==========================================
 export const registerSchema = z.object({
   body: z.object({
     username: z.string().min(3, "Usuário deve ter no mínimo 3 caracteres"),
@@ -16,9 +13,6 @@ export const registerSchema = z.object({
 // Tipagem para o Controller de Cadastro
 export type RegisterUserInput = z.infer<typeof registerSchema>['body'];
 
-// ==========================================
-// Schema Login
-// ==========================================
 export const loginSchema = z.object({
   body: z.object({
     // O usuário pode digitar tanto o e-mail quanto o username aqui
@@ -30,18 +24,12 @@ export const loginSchema = z.object({
 // Tipagem para o Controller de Login
 export type LoginUserInput = z.infer<typeof loginSchema>['body'];
 
-// ==========================================
-// Schema Get Perfil por ID
-// ==========================================
 export const getProfileSchema = z.object({
   params: z.object({
-    id: z.uuid({ message: "ID de formato inválido. Deve ser um UUID." }),
+    id: z.uuid({ message: "ID inválido." }),
   }),
 });
 
-// ==========================================
-// Schema Update Perfil
-// ==========================================
 export const updateProfileSchema = z.object({
   params: z.object({
     id: z.uuid({ message: "ID inválido." }),
@@ -57,9 +45,6 @@ export const updateProfileSchema = z.object({
 // Tipagem para o Controller de Atualização de Perfil
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>['body'];
 
-// ==========================================
-// Schema Delete de Perfil
-// ==========================================
 export const deleteProfileSchema = z.object({
   params: z.object({
     id: z.uuid({ message: "ID inválido." }),
