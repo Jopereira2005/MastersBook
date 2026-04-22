@@ -56,6 +56,8 @@ model Character {
   level      Int      @default(1)
   attributes Json     // Dados flexíveis como HP, Atributos
   bio        String?
+  avatarUrl  String?   @map("avatar_url")
+  createdAt  DateTime  @default(now()) @map("created_at")
   
   // Campo Escalar e Campo de Relação 
   userId     String   @map("user_id")
