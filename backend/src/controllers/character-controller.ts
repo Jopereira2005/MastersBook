@@ -7,7 +7,48 @@ import type {
 } from '../schemas/character-schema.js';
 
 export class CharacterController {
-  
+  async getAll(req: Request, res: Response) {
+    try {
+      const allCharacters = await prisma.character.findMany({
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          race: true,
+          class: true,
+          level: true,
+          attributes: true,
+          bio: true,
+          avatarUrl: true,
+          userId: true,
+          systemId: true
+        }
+      });
+
+      res.status(200).json({
+        message: 'Todos as fichas foram listados com sucesso!',
+        characters: allCharacters
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
+  async deleteAll(req: Request, res: Response) {
+    try {
+      await prisma.character.deleteMany({
+        where: {}, // Sem filtro, apaga todos as fichas
+      });
+
+      res.status(200).json({
+        message: 'Todos as fichas foram deletados com sucesso!',
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
   async createCharacter(req: Request<{}, {}, CreateCharacterInput>, res: Response) {
     try {
       const {

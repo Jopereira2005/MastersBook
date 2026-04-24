@@ -10,6 +10,42 @@ import type {
 } from '../schemas/user-schema.js';
 
 export class UserController {
+  async getAll(req: Request, res: Response) {
+    try {
+      const allUsers = await prisma.user.findMany({
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatarUrl: true,
+        }
+      });
+
+      res.status(200).json({
+        message: 'Todos os usuários foram listados com sucesso!',
+        users: allUsers
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
+  async deleteAll(req: Request, res: Response) {
+    try {
+      await prisma.user.deleteMany({
+        where: {}, // Sem filtro, apaga todos os usuários
+      });
+
+      res.status(200).json({
+        message: 'Todos os usuários foram deletados com sucesso!',
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
   async register(req: Request<{}, {}, RegisterUserInput>, res: Response) {
     try {
       const { username, firstName, lastName, email, password } = req.body;
