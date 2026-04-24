@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Eldritch Quest – Dark Fantasy RPG Design System
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 240 38% 6%;
+    --foreground: 250 30% 96%;
+
+    --card: 240 35% 9%;
+    --card-foreground: 250 30% 96%;
+
+    --popover: 240 38% 8%;
+    --popover-foreground: 250 30% 96%;
+
+    --primary: 265 89% 62%;
+    --primary-foreground: 250 30% 98%;
+    --primary-glow: 275 95% 70%;
+
+    --secondary: 245 30% 16%;
+    --secondary-foreground: 250 30% 96%;
+
+    --muted: 240 25% 14%;
+    --muted-foreground: 245 15% 65%;
+
+    --accent: 280 80% 60%;
+    --accent-foreground: 250 30% 98%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 250 30% 98%;
+
+    --success: 150 65% 50%;
+    --warning: 40 95% 60%;
+
+    --border: 250 25% 18%;
+    --input: 245 28% 14%;
+    --ring: 265 89% 62%;
+
+    --radius: 1rem;
+
+    /* Brand gradients & effects */
+    --gradient-primary: linear-gradient(135deg, hsl(265 89% 62%), hsl(285 90% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(260 70% 18%) 0%, hsl(240 50% 10%) 50%, hsl(280 60% 15%) 100%);
+    --gradient-card: linear-gradient(160deg, hsl(245 35% 12% / 0.85) 0%, hsl(255 40% 9% / 0.85) 100%);
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(275 95% 70% / 0.25), transparent 70%);
+
+    --shadow-glow: 0 0 40px hsl(275 95% 70% / 0.35);
+    --shadow-elegant: 0 20px 60px -20px hsl(265 89% 35% / 0.5);
+    --shadow-card: 0 10px 40px -10px hsl(240 50% 4% / 0.6);
+
+    --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 240 40% 5%;
+    --sidebar-foreground: 250 25% 88%;
+    --sidebar-primary: 265 89% 62%;
+    --sidebar-primary-foreground: 250 30% 98%;
+    --sidebar-accent: 245 30% 14%;
+    --sidebar-accent-foreground: 250 30% 96%;
+    --sidebar-border: 250 25% 14%;
+    --sidebar-ring: 265 89% 62%;
+  }
+
+  .dark {
+    /* Same — app is dark by default */
+    --background: 240 38% 6%;
+    --foreground: 250 30% 96%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    @apply min-h-screen;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 15% 10%, hsl(275 80% 25% / 0.25), transparent 45%),
+      radial-gradient(circle at 85% 90%, hsl(260 80% 20% / 0.3), transparent 50%),
+      radial-gradient(hsl(265 50% 30% / 0.08) 1px, transparent 1px);
+    background-size: auto, auto, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-wide;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply relative rounded-2xl border border-border/60 backdrop-blur-xl;
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .glow-card {
+    @apply glass-card overflow-hidden;
+    transition: var(--transition-smooth);
+  }
+  .glow-card:hover {
+    @apply border-primary/50;
+    box-shadow: var(--shadow-glow), var(--shadow-card);
+    transform: translateY(-2px);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 24px hsl(var(--primary-glow) / 0.6);
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+}
