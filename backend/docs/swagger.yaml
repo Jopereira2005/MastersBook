@@ -11,8 +11,32 @@ servers:
 tags:
   - name: Users
     description: Operações relacionadas a usuários.
+  - name: Characters
+    description: Operações relacionadas as fichas de personagens.
+  - name: Friendships
+    description: Operações relacionadas a amizade.
 
 paths:
+  /users/get-all:
+      get:
+        summary: Retorna o perfil completo do todos os usuários
+        tags: [Users]
+        responses:
+          200:
+            description: Todos os usuários foram listados com sucesso
+          500:
+            description: Erro interno no servidor
+      
+  /users/delete-all:
+    delete:
+      summary: Deleta todos os usuários
+      tags: [Users]
+      responses:
+        200:
+          description: Todos os usuários foram deletados com sucesso
+        500:
+          description: Erro interno no servidor
+
   /users/register:
     post:
       summary: Cadastra um novo usuário
@@ -191,6 +215,26 @@ paths:
           404:
             description: Usuário não encontrado
 
+  /characters/get-all:
+      get:
+        summary: Retorna o perfil completo do todos os personagens
+        tags: [Characters]
+        responses:
+          200:
+            description: Todos os personagens foram listados com sucesso
+          500:
+            description: Erro interno no servidor
+      
+  /characters/delete-all:
+    delete:
+      summary: Deleta todos os personagens
+      tags: [Characters]
+      responses:
+        200:
+          description: Todos os personagens foram deletados com sucesso
+        500:
+          description: Erro interno no servidor
+
   /characters/create:
     post:
       summary: Cria uma nova ficha de personagem
@@ -278,50 +322,6 @@ paths:
         500:
           description: Erro interno no servidor
 
-  /characters/update/{id}:
-    patch:
-      summary: Atualiza dados de uma ficha (Ex: Alterar HP durante a mesa)
-      tags: [Characters]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: ID da ficha do personagem
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                level:
-                  type: integer
-                  example: 5
-                attributes:
-                  type: object
-                  description: Envie apenas os atributos que deseja alterar. Eles serão mesclados com os atuais.
-                  example:
-                    hp: 35
-                    mana: 10
-      responses:
-        200:
-          description: Ficha atualizada com sucesso
-        400:
-          description: Erro de validação
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        404:
-          description: Ficha não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /characters/{id}:
     get:
       summary: Busca os dados completos de uma ficha específica
@@ -366,6 +366,50 @@ paths:
         200:
           description: Lista de fichas retornada com sucesso (Pode ser um array vazio)
 
+  /characters/update/{id}:
+    patch:
+      summary: Atualiza dados de uma ficha (Ex: Alterar HP durante a mesa)
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da ficha do personagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level:
+                  type: integer
+                  example: 5
+                attributes:
+                  type: object
+                  description: Envie apenas os atributos que deseja alterar. Eles serão mesclados com os atuais.
+                  example:
+                    hp: 35
+                    mana: 10
+      responses:
+        200:
+          description: Ficha atualizada com sucesso
+        400:
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Ficha não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /characters/delete/{id}:
    delete:
       summary: Apaga permanentemente uma ficha do banco de dados
@@ -401,6 +445,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse' 
+
+  /friendships/get-all:
+      get:
+        summary: Retorna todos os convites de amizade e amizades confirmadas do banco de dados
+        tags: [Friendships]
+        responses:
+          200:
+            description: Todos os convites e amizades foram listados com sucesso
+          500:
+            description: Erro interno no servidor
+      
+  /friendships/delete-all:
+    delete:
+      summary: Deleta todos os convites e amizades
+      tags: [Friendships]
+      responses:
+        200:
+          description: Todos os convites e amizades foram deletados com sucesso
+        500:
+          description: Erro interno no servidor
+
+  /friendships/invite:
+    post:
+      summary: Envia um convite de amizade
+      description: Permite adicionar um amigo usando o Username ou o E-mail dele.
+      tags: [Friendships]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senderId, receiverIdentifier]
+              properties:
+                senderId:
+                  type: string
+                  format: uuid
+                  example: "COLE_O_ID_DO_REMETENTE_AQUI"
+                receiverIdentifier:
+                  type: string
+                  description: Pode ser o email ou o username do amigo
+                  example: "mr_paxe ou mrpaxe@gmail.com"
+      responses:
+        201:
+          description: Convite enviado com sucesso
+        400:
+          description: Tentativa de auto-convite ou erro de validação
+        404:
+          description: Recebedor não encontrado
+        409:
+          description: Conflito (Convite já existe)
 
 components:
   schemas:
