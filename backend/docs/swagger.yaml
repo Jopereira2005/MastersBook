@@ -7,7 +7,7 @@ info:
 servers:
   - url: http://localhost:3000/api
     description: Servidor Local
-  - url: https://mastersbook.onrender.com/api
+  - url: https://mastersbook-api.onrender.com/api
     description: Servidor de Produção
 
 tags:
