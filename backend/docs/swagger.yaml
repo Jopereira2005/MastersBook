@@ -555,6 +555,27 @@ paths:
         400:
           description: Erro de validação (ID inválido)
 
+  /friendships/accept/{id}:
+    patch:
+      summary: Aceita um convite de amizade
+      description: Muda o status do convite para ACCEPTED.
+      tags: [Friendships]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da amizade (Friendship ID)
+      responses:
+        200:
+          description: Convite aceito com sucesso
+        400:
+          description: Erro de validação Convite já processado
+        404:
+          description: Convite não encontrado
+
   /friendships/decline/{id}:
     delete:
       summary: Recusa um convite de amizade (Apaga permanentemente)
@@ -583,7 +604,7 @@ paths:
         404:
           description: Convite não encontrado
 
-  /friendships/remove/{id}:
+  /friendships/remove-friend/{id}:
     delete:
       summary: Desfaz uma amizade ativa
       description: Apaga permanentemente o registo de amizade (status ACCEPTED) entre dois usuários.
