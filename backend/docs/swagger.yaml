@@ -499,6 +499,119 @@ paths:
         409:
           description: Conflito (Convite já existe)
 
+  /friendships/pending/{userId}:
+    get:
+      summary: Lista todos os convites de amizade pendentes recebidos por um jogador
+      tags: [Friendships]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do jogador que está a visualizar a sua caixa de entrada
+      responses:
+        200:
+          description: Lista de convites retornada com sucesso (Pode ser um array vazio)
+        400:
+          description: Erro de validação (ID inválido)
+
+  /friendships/friends/{userId}:
+    get:
+      summary: Lista todos os amigos de um usuário (Amizades aceites)
+      tags: [Friendships]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do usuário que está a visualizar a sua lista de amigos
+      responses:
+        200:
+          description: Lista de amigos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    friendshipId:
+                      type: string
+                      format: uuid
+                    friendId:
+                      type: string
+                      format: uuid
+                    username:
+                      type: string
+                    avatarUrl:
+                      type: string
+                    friendsSince:
+                      type: string
+                      format: date-time
+        400:
+          description: Erro de validação (ID inválido)
+
+  /friendships/decline/{id}:
+    delete:
+      summary: Recusa um convite de amizade (Apaga permanentemente)
+      tags: [Friendships]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da amizade (Friendship ID)
+      responses:
+        200:
+          description: Convite recusado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Convite recusado e apagado com sucesso."
+        400:
+          description: Erro de validação ou Convite já processado
+        404:
+          description: Convite não encontrado
+
+  /friendships/remove/{id}:
+    delete:
+      summary: Desfaz uma amizade ativa
+      description: Apaga permanentemente o registo de amizade (status ACCEPTED) entre dois usuários.
+      tags: [Friendships]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da amizade (Friendship ID)
+      responses:
+        200:
+          description: Amizade desfeita com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Amizade desfeita com sucesso."
+        400:
+          description: Erro de validação ou Amizade não está ativa
+        404:
+          description: Amizade não encontrada
+
 components:
   schemas:
     RegisterInput:
