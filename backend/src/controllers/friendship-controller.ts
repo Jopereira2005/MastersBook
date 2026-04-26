@@ -4,6 +4,7 @@ import { EmailSender } from '../utils/email-sender.js';
 
 // Instanciamos o serviço de e-mail fora da classe para ser reaproveitado
 const emailService = new EmailSender();
+
 import type { 
   SendInviteInput 
 } from '../schemas/friendship-schema.js';
@@ -263,6 +264,56 @@ export class FriendshipController {
     } catch (error) {
       console.error('Erro ao desfazer amizade:', error);
       res.status(500).json({ error: 'Erro interno no servidor ao tentar remover amigo.' });
+    }
+  }
+
+  async acceptInvite(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Busca o convite na base de dados trazendo os dados essenciais
+      const friendship = await prisma.friendship.findUnique({
+        where: { id },
+        include: {
+          user1: { select: { email: true, username: true, firstName: true } }, // Remetente (quem vai receber o e-mail de aviso)
+          user2: { select: { username: true, firstName: true } }               // Quem está clicando em "Aceitar"
+        }
+      });
+
+      if (!friendship) {
+        res.status(404).json({ error: 'Convite não encontrado.' });
+        return;
+      }
+
+      // Trava de Segurança: Verifica se o convite realmente está pendente
+      if (friendship.status !== 'PENDING') {
+        res.status(400).json({ error: 'Este convite já foi processado ou não está mais pendente.' });
+        return;
+      }
+
+      // Atualiza o status no banco de dados para ACCEPTED
+      const updatedFriendship = await prisma.friendship.update({
+        where: { id },
+        data: { status: 'ACCEPTED' }
+      });
+
+      // Disparo do E-mail de Notificação (Background)
+      // Lembra da regra de ouro? Sem o "await" para não travar a tela de quem clicou em "Aceitar"!
+      emailService.sendInviteAcceptedEmail(
+        friendship.user1.email,    // Para quem vai o e-mail (Remetente original)
+        friendship.user1.firstName, // Nome de quem recebe o e-mail ("Boas notícias, João!")
+        friendship.user2.username  // Nome de quem aceitou ("Maria aceitou o seu pedido")
+      );
+
+      // Retorna sucesso para o Front-end
+      res.status(200).json({
+        message: `${friendship.user1.firstName} e ${friendship.user2.firstName} agora são amigos!`,
+        friendship: updatedFriendship
+      });
+
+    } catch (error) {
+      console.error('Erro ao aceitar convite:', error);
+      res.status(500).json({ error: 'Erro interno no servidor.', details: error });
     }
   }
 }

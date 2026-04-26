@@ -18,7 +18,7 @@ friendshipRoutes.delete('/delete-all', friendshipController.deleteAll.bind(frien
 friendshipRoutes.post('/invite', validate(sendInviteSchema), friendshipController.sendInvite.bind(friendshipController));
 friendshipRoutes.get('/pending/:userId', validate(friendshipUserIdParamSchema), friendshipController.getPendingInvites.bind(friendshipController));
 friendshipRoutes.get('/friends/:userId', validate(friendshipUserIdParamSchema), friendshipController.getFriendsList.bind(friendshipController));
-
+friendshipRoutes.patch('/accept/:id', validate(friendshipIdParamSchema), friendshipController.acceptInvite.bind(friendshipController));
 friendshipRoutes.delete('/decline/:id', validate(friendshipIdParamSchema), friendshipController.declineInvite.bind(friendshipController));
 friendshipRoutes.delete('/remove-friend/:id', validate(friendshipIdParamSchema), friendshipController.removeFriend.bind(friendshipController));
 export { friendshipRoutes };
