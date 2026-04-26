@@ -9,3 +9,15 @@ export const sendInviteSchema = z.object({
 });
 
 export type SendInviteInput = z.infer<typeof sendInviteSchema>['body'];
+
+export const friendshipIdParamSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "O ID do convite inválido." })
+  })
+});
+
+export const friendshipUserIdParamSchema = z.object({
+  params: z.object({
+    userId: z.uuid({ message: "O ID do usuário inválido." }),
+  }),
+});

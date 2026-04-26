@@ -107,7 +107,7 @@ export class FriendshipController {
       // Não usamos "await" aqui para a resposta da API ser instantânea para o jogador.
       emailService.sendFriendRequestEmail(
         receiver.email,
-        receiver.username,
+        receiver.firstName,
         sender.username      
       );
 
@@ -119,7 +119,150 @@ export class FriendshipController {
 
     } catch (error) {
       console.error('Erro ao enviar convite:', error);
-      res.status(500).json({ error: 'Erro interno no servidor ao tentar enviar convite.' });
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
+  async declineInvite(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Verifica se o convite existe
+      const friendship = await prisma.friendship.findUnique({
+        where: { id }
+      });
+
+      if (!friendship) {
+        res.status(404).json({ error: 'Convite não encontrado.' });
+        return;
+      }
+
+      // Trava de Segurança: Só permitimos recusar convites que ainda estejam pendentes
+      if (friendship.status !== 'PENDING') {
+        res.status(400).json({ error: 'Este convite já foi processado ou não está pendente.' });
+        return;
+      }
+
+      // Apaga a amizade/convite permanentemente da base de dados
+      await prisma.friendship.delete({
+        where: { id }
+      });
+
+      res.status(200).json({ message: 'Convite recusado com sucesso.' });
+
+    } catch (error) {
+      console.error('Erro ao recusar convite:', error);
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
+  async getPendingInvites(req: Request<{ userId: string }>, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      const pendingInvites = await prisma.friendship.findMany({
+        where: {
+          user2Id: userId, // O usuário atual é quem recebeu o convite
+          status: 'PENDING' // Apenas convites que ainda não foram aceitos/recusados
+        },
+        include: {
+          // Trazemos os dados do remetente para mostrar na interface ("João enviou um convite")
+          user1: { 
+            select: { 
+              id: true, 
+              username: true, 
+              avatarUrl: true 
+            } 
+          }
+        },
+        orderBy: {
+          createdAt: 'desc' // Mostra os convites mais recentes primeiro
+        }
+      });
+
+      res.status(200).json(pendingInvites);
+
+    } catch (error) {
+      console.error('Erro ao buscar convites pendentes:', error);
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
+    }
+  }
+
+  async getFriendsList(req: Request<{ userId: string }>, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      // Busca todas as amizades onde o status é ACCEPTED
+      // E o nosso usuário é o user1 OU o user2
+      const friendships = await prisma.friendship.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [
+            { user1Id: userId },
+            { user2Id: userId }
+          ]
+        },
+        include: {
+          // Trazemos os dados básicos de ambos para podermos filtrar no passo 2
+          user1: { select: { id: true, username: true, avatarUrl: true } },
+          user2: { select: { id: true, username: true, avatarUrl: true } }
+        },
+      });
+
+      // A MÁGICA DA LIMPEZA DE DADOS
+      // O Front-end não quer saber quem é o user1 ou user2. Ele só quer uma lista de "Amigos".
+      // Vamos mapear a resposta para devolver apenas os dados da OUTRA pessoa.
+      const cleanFriendsList = friendships.map(friendship => {
+        // Se o usuário atual for o user1, o amigo dele é o user2. E vice-versa.
+        const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1;
+        
+        return {
+          friendshipId: friendship.id, // Útil caso o Front-end precise de chamar a rota de deletar/desfazer amizade
+          friendId: friend.id,
+          username: friend.username,
+          avatarUrl: friend.avatarUrl,
+        };
+      });
+
+      res.status(200).json(cleanFriendsList); // Retorna o array limpo e direto!
+
+    } catch (error) {
+      console.error('Erro ao buscar lista de amigos:', error);
+      res.status(500).json({ error: 'Erro interno no servidor.', detail: error});
+    }
+  }
+
+  async removeFriend(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Busca a relação de amizade na base de dados
+      const friendship = await prisma.friendship.findUnique({
+        where: { id }
+      });
+
+      if (!friendship) {
+        res.status(404).json({ error: 'Amizade não encontrada.' });
+        return;
+      }
+
+      // Trava de Segurança: Garante que só estamos a remover amizades ativas.
+      // (Para remover convites pendentes, o utilizador deve usar a rota de 'decline').
+      if (friendship.status !== 'ACCEPTED') {
+        res.status(400).json({ error: 'Esta amizade não está ativa ou ainda está pendente.' });
+        return;
+      }
+
+      // Apaga permanentemente a relação, quebrando a amizade entre os dois
+      await prisma.friendship.delete({
+        where: { id }
+      });
+
+      res.status(200).json({ message: 'Amizade desfeita com sucesso.' });
+
+    } catch (error) {
+      console.error('Erro ao desfazer amizade:', error);
+      res.status(500).json({ error: 'Erro interno no servidor ao tentar remover amigo.' });
     }
   }
 }
