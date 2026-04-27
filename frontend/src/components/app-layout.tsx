@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { AppSidebar } from "./AppSidebar";
+import { AppSidebar } from "./app-sidebar";
 import { Home, Dices, ScrollText, UserCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
