@@ -204,10 +204,11 @@ export class FriendshipController {
           ]
         },
         include: {
-          // Trazemos os dados básicos de ambos para podermos filtrar no passo 2
+          // Trazemos os dados básicos de ambos para podemos filtrar
           user1: { select: { id: true, username: true, avatarUrl: true } },
           user2: { select: { id: true, username: true, avatarUrl: true } }
         },
+        orderBy: { updatedAt: 'desc' }
       });
 
       // A MÁGICA DA LIMPEZA DE DADOS
