@@ -12,7 +12,6 @@ export class CharacterController {
       const allCharacters = await prisma.character.findMany({
         select: {
           id: true,
-          username: true,
           firstName: true,
           lastName: true,
           race: true,
@@ -31,6 +30,7 @@ export class CharacterController {
         characters: allCharacters
       });
     } catch (error) {
+      console.log(error)
       res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
     }
   }
