@@ -19,6 +19,7 @@ tags:
     description: Operações relacionadas a amizade.
 
 paths:
+  # Rotas Users
   /users/get-all:
       get:
         summary: Retorna o perfil completo do todos os usuários
@@ -217,6 +218,7 @@ paths:
           404:
             description: Usuário não encontrado
 
+  # Rotas Characters
   /characters/get-all:
       get:
         summary: Retorna o perfil completo do todos os personagens
@@ -448,6 +450,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse' 
 
+  # Rotas Friendships
   /friendships/get-all:
       get:
         summary: Retorna todos os convites de amizade e amizades confirmadas do banco de dados
@@ -632,6 +635,372 @@ paths:
           description: Erro de validação ou Amizade não está ativa
         404:
           description: Amizade não encontrada
+
+  # Rotas Table
+  /tables/get-all:
+    get:
+      summary: "Lista todas as mesas do banco de dados"
+      description: Rota de debug para listar todas as campanhas, Mestres e jogadores conectados. (Remover em Produção)
+      tags: [Tables]
+      responses:
+        200:
+          description: Lista geral de mesas retornada com sucesso
+
+  /tables/delete-all:
+    delete:
+      summary: "Apaga todas as mesas"
+      description: Apaga permanentemente todas as mesas da base de dados. Útil para limpar o banco rapidamente durante o desenvolvimento. (Remover em Produção)
+      tags: [Tables]
+      responses:
+        200:
+          description: Todas as mesas foram apagadas
+          
+  /tables/create:
+    post:
+      summary: Cria uma nova Mesa
+      description: O usuário cria uma mesa, tornando-se o Mestre (GM). Um código de convite (inviteCode) é gerado automaticamente.
+      tags: [Tables]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, gmId, systemId]
+              properties:
+                name:
+                  type: string
+                  example: "A Maldição de Strahd"
+                description:
+                  type: string
+                  example: "Campanha sombria de vampiros para jogadores nível 1."
+                gmId:
+                  type: string
+                  format: uuid
+                  example: "ID_DO_USUARIO_MESTRE"
+                systemId:
+                  type: string
+                  format: uuid
+                  example: "ID_DO_SISTEMA_DND5E"
+      responses:
+        201:
+          description: Mesa criada com sucesso (Retorna a mesa com o inviteCode gerado)
+        400:
+          description: Erro de validação
+        500:
+          description: Erro interno do servidor
+
+  /tables/get-by-gm/{gmId}:
+    get:
+      summary: Lista todas as mesas de um Mestre
+      description: Retorna as mesas criadas pelo GM, incluindo a contagem de jogadores e os dados enxutos das Fichas (Characters) conectadas.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: gmId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do Mestre (User ID)
+      responses:
+        200:
+          description: Lista de mesas do Mestre retornada com sucesso
+        400:
+          description: Erro de validação (ID inválido)
+
+  /tables/update/{id}:
+    patch:
+      summary: Atualiza os dados de uma Mesa
+      description: Permite ao Mestre alterar o nome ou a descrição da campanha.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da Mesa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "A Maldição de Strahd (Ato 2)"
+                description:
+                  type: string
+                  example: "Os heróis chegaram a Vallaki."
+      responses:
+        200:
+          description: Mesa atualizada com sucesso
+        404:
+          description: Mesa não encontrada
+        400:
+          description: Erro de validação
+
+  /tables/regenerate-code/{id}:
+    patch:
+      summary: Regenera o código de convite de uma Mesa
+      description: Invalida o código de convite antigo e gera um novo código de 6 caracteres aleatórios para a campanha.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da Mesa
+      responses:
+        200:
+          description: Código regenerado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Código de convite regenerado com sucesso!"
+                  newInviteCode:
+                    type: string
+                    example: "X9B2K1"
+        400:
+          description: Erro de validação (ID inválido)
+        404:
+          description: Mesa não encontrada
+
+  /tables/delete/{id}:
+    delete:
+      summary: Exclui uma Mesa permanentemente
+      description: Encerra a campanha e apaga a mesa. Jogadores conectados serão removidos automaticamente via Cascade.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da Mesa
+      responses:
+        200:
+          description: Mesa excluída com sucesso
+        404:
+          description: Mesa não encontrada
+
+  /tables/join:
+    post:
+      summary: Jogador entra numa Mesa
+      description: Vincula um usuário e a sua Ficha a uma Mesa usando um código de convite.
+      tags: [TablePlayers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inviteCode, userId, characterId]
+              properties:
+                inviteCode:
+                  type: string
+                  example: "X9B2K1"
+                userId:
+                  type: string
+                  format: uuid
+                characterId:
+                  type: string
+                  format: uuid
+      responses:
+        200:
+          description: Entrou na mesa com sucesso
+        400:
+          description: Ficha incompatível com o sistema da mesa ou GM tentando entrar
+        403:
+          description: Ficha não pertence ao jogador
+        404:
+          description: Código inválido ou Ficha não encontrada
+        409:
+          description: Jogador já está na mesa
+
+  /tables/{tableId}/players/{playerId}:
+    delete:
+      summary: Sair ou Expulsar jogador da Mesa
+      description: Remove um jogador da campanha. Exige validação de propriedade (ownership) no corpo da requisição.
+      tags: [TablePlayers]
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: playerId
+          required: true
+          description: ID do usuário/jogador que será removido
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requesterId]
+              properties:
+                requesterId:
+                  type: string
+                  format: uuid
+                  description: ID de quem está executando a ação (Deve ser o próprio jogador ou o GM)
+      responses:
+        200:
+          description: Jogador removido com sucesso
+        403:
+          descripti"on: Sem permissão (requesterId não é o GM nem o próprio jogador)
+        404:
+          description: Jogador não está na mesa
+          
+  # Rotas Systems
+  /systems/get-all:
+    get:
+      summary: Lista todos os Sistemas de RPG
+      description: Retorna todos os sistemas cadastrados em ordem alfabética.
+      tags: [Systems]
+      responses:
+        200:
+          description: Lista de sistemas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+
+  /systems/delete-all:
+    delete:
+      summary: "Apaga todos os Sistemas (Limpeza)"
+      description: Apaga permanentemente todos os sistemas da base de dados. (Remover em Produção)
+      tags: [Systems]
+      responses:
+        200:
+          description: Todos os sistemas foram apagados
+
+  /systems/create:
+    post:
+      summary: Cria um novo Sistema de RPG
+      description: Adiciona um novo sistema (ex. D&D 5e, Tormenta20) que poderá ser usado nas Fichas e Mesas.
+      tags: [Systems]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "Dungeons & Dragons 5e"
+                description:
+                  type: string
+                  example: "Sistema clássico de fantasia medieval."
+      responses:
+        201:
+          description: Sistema criado com sucesso
+        400:
+          description: Erro de validação
+        500:
+          description: Erro interno do servidor
+
+  /systems/get/{id}:
+    get:
+      summary: Busca os detalhes de um Sistema
+      description: Retorna os dados do sistema e a contagem de quantas mesas e fichas o utilizam.
+      tags: [Systems]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do Sistema
+      responses:
+        200:
+          description: Sistema encontrado com sucesso
+        400:
+          description: Erro de validação
+        404:
+          description: Sistema não encontrado
+
+  /systems/update/{id}:
+    patch:
+      summary: Atualiza um Sistema de RPG
+      description: Permite alterar o nome ou a descrição do sistema.
+      tags: [Systems]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do Sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "D&D 5e Revisado"
+                description:
+                  type: string
+                  example: "Regras atualizadas 2024."
+      responses:
+        200:
+          description: Sistema atualizado com sucesso
+        404:
+          description: Sistema não encontrado
+  
+  /systems/delete/{id}:
+    delete:
+      summary: Exclui um Sistema permanentemente
+      description: CUIDADO! Devido ao Cascade, apagar um sistema pode apagar todas as Mesas e Fichas vinculadas a ele.
+      tags: [Systems]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do Sistema
+      responses:
+        200:
+          description: Sistema excluído com sucesso
+        404:
+          description: Sistema não encontrado
 
 components:
   schemas:
