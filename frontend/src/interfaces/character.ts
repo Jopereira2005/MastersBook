@@ -3,22 +3,22 @@ import { ISystem } from "./system";
 import { ITablePlayer } from "./table-player";
 
 export interface ICharacter {
-  id: string;
-  firstName: string;
-  lastName: string;
-  race: string;
-  class: string;
-  level: number;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  race?: string;
+  class?: string;
+  level?: number;
   // O Json do Prisma pode ser tipado como um Record genérico ou uma interface específica
-  attributes: Record<string, any>; 
+  attributes?: Record<string, any>; 
   bio?: string | null;
   avatarUrl?: string | null;
-  createdAt: string;
+  createdAt?: string;
 
-  userId: string;
+  userId?: string;
   user?: IUser;
 
-  systemId: string;
+  systemId?: string;
   system?: ISystem;
 
   tablePlayers?: ITablePlayer[];

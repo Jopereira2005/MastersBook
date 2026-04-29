@@ -2,10 +2,10 @@ import { ITable } from "./table";
 import { ICharacter } from "./character";
 
 export interface ISystem {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
   description?: string | null;
-  createdAt: string;
+  createdAt?: string;
 
   // Relacionamentos
   characters?: ICharacter[];

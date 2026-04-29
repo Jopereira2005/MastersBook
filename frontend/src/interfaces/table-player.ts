@@ -3,14 +3,14 @@ import { ITable } from "./table";
 import { ICharacter } from "./character";
 
 export interface ITablePlayer {
-  id: string;
+  id?: string;
   
-  userId: string;
+  userId?: string;
   user?: IUser;
 
-  tableId: string;
+  tableId?: string;
   table?: ITable;
 
-  characterId: string;
+  characterId?: string;
   character?: ICharacter;
 }
