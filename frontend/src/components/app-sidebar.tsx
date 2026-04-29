@@ -2,12 +2,14 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Home, Dices, ScrollText, UserCircle, LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { Users } from "lucide-react";
 
 const items = [
   { to: "/home", label: "Início", icon: Home },
   { to: "/mesa", label: "Mesas", icon: Dices },
   { to: "/fichas", label: "Fichas", icon: ScrollText },
   { to: "/perfil", label: "Perfil", icon: UserCircle },
+  { to: "/amigos", label: "Amigos", icon: Users },
 ];
 
 export const AppSidebar = () => {

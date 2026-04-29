@@ -13,6 +13,7 @@ import Home from "./pages/Home.tsx";
 import Mesas from "./pages/Mesas.tsx";
 import Fichas from "./pages/Fichas.tsx";
 import Perfil from "./pages/Perfil.tsx";
+import Amigos from "./pages/Amigos";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/home" element={<Home />} />
               <Route path="/mesa" element={<Mesas />} />
               <Route path="/fichas" element={<Fichas />} />
+              <Route path="/amigos" element={<Amigos />} />
               <Route path="/perfil" element={<Perfil />} />
             </Route>
             <Route path="*" element={<NotFound />} />
