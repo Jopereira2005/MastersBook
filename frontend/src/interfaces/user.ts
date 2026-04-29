@@ -10,7 +10,7 @@ export interface IUser {
   lastName: string;
   email: string;
   avatarUrl?: string | null;
-  createdAt: string; 
+  createdAt?: string; 
 
   // Relacionamentos
   characters?: ICharacter[];
