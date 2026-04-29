@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Ficha {
@@ -17,23 +20,60 @@ interface Ficha {
   hp: number;
   ca: number;
   ataque: number;
+
+  forca: number;
+  destreza: number;
+  constituicao: number;
+  sabedoria: number;
+  inteligencia: number;
+
   cor: string;
 }
 
 const initial: Ficha[] = [
-  { id: "1", nome: "Aelin Ashryver", classe: "Ranger", raca: "Meio-elfa", nivel: 8, hp: 72, ca: 16, ataque: 9, cor: "from-purple-500 to-fuchsia-500" },
-  { id: "2", nome: "Theron Stormblade", classe: "Paladino", raca: "Humano", nivel: 6, hp: 64, ca: 19, ataque: 8, cor: "from-indigo-500 to-purple-600" },
-  { id: "3", nome: "Mirelle Nightwhisper", classe: "Bruxa", raca: "Tiefling", nivel: 7, hp: 49, ca: 13, ataque: 10, cor: "from-violet-600 to-pink-500" },
-  { id: "4", nome: "Bren Ironfist", classe: "Bárbaro", raca: "Anão", nivel: 5, hp: 78, ca: 15, ataque: 7, cor: "from-purple-700 to-blue-600" },
+  {
+    id: "1",
+    nome: "Aelin Ashryver",
+    classe: "Ranger",
+    raca: "Meio-elfa",
+    nivel: 8,
+    hp: 72,
+    ca: 16,
+    ataque: 9,
+    forca: 14,
+    destreza: 18,
+    constituicao: 12,
+    sabedoria: 13,
+    inteligencia: 10,
+    cor: "from-purple-500 to-fuchsia-500",
+  },
 ];
+
+const classes = ["Guerreiro", "Mago", "Ladino", "Clérigo", "Paladino", "Ranger"];
+const racas = ["Humano", "Elfo", "Anão", "Orc", "Tiefling", "Meio-elfo"];
 
 const Fichas = () => {
   const [fichas, setFichas] = useState<Ficha[]>(initial);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", classe: "", raca: "", nivel: 1 });
+
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedFicha, setSelectedFicha] = useState<Ficha | null>(null);
+
+  const [form, setForm] = useState({
+    nome: "",
+    classe: "",
+    raca: "",
+    nivel: 1,
+    forca: 0,
+    destreza: 0,
+    constituicao: 0,
+    sabedoria: 0,
+    inteligencia: 0,
+  });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+
     setFichas([
       ...fichas,
       {
@@ -45,7 +85,19 @@ const Fichas = () => {
         cor: "from-purple-500 to-fuchsia-500",
       },
     ]);
-    setForm({ nome: "", classe: "", raca: "", nivel: 1 });
+
+    setForm({
+      nome: "",
+      classe: "",
+      raca: "",
+      nivel: 1,
+      forca: 0,
+      destreza: 0,
+      constituicao: 0,
+      sabedoria: 0,
+      inteligencia: 0,
+    });
+
     setOpen(false);
     toast.success("Ficha criada com sucesso!");
   };
@@ -65,29 +117,64 @@ const Fichas = () => {
               <Plus size={16} className="mr-2" /> Nova Ficha
             </Button>
           </DialogTrigger>
+
           <DialogContent className="glass-card border-primary/30">
             <DialogHeader>
               <DialogTitle className="font-display gradient-text">Criar Personagem</DialogTitle>
             </DialogHeader>
+
             <form onSubmit={handleCreate} className="space-y-4">
+
               <div className="space-y-2">
-                <Label>Nome do personagem</Label>
+                <Label>Nome</Label>
                 <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label>Classe</Label>
-                  <Input value={form.classe} onChange={(e) => setForm({ ...form, classe: e.target.value })} placeholder="Mago" required />
+                  <Select onValueChange={(value) => setForm({ ...form, classe: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha a classe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-2">
+
+                <div>
                   <Label>Raça</Label>
-                  <Input value={form.raca} onChange={(e) => setForm({ ...form, raca: e.target.value })} placeholder="Elfo" required />
+                  <Select onValueChange={(value) => setForm({ ...form, raca: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha a raça" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {racas.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="space-y-2">
+
+              <div>
                 <Label>Nível</Label>
-                <Input type="number" min={1} max={20} value={form.nivel} onChange={(e) => setForm({ ...form, nivel: +e.target.value })} required />
+                <Input type="number" min={1} max={20} value={form.nivel}
+                  onChange={(e) => setForm({ ...form, nivel: +e.target.value })} />
               </div>
+
+              {/* ATRIBUTOS */}
+              <div className="grid grid-cols-2 gap-4">
+                <Input placeholder="Força" type="number" onChange={(e) => setForm({ ...form, forca: +e.target.value })} />
+                <Input placeholder="Destreza" type="number" onChange={(e) => setForm({ ...form, destreza: +e.target.value })} />
+                <Input placeholder="Constituição" type="number" onChange={(e) => setForm({ ...form, constituicao: +e.target.value })} />
+                <Input placeholder="Sabedoria" type="number" onChange={(e) => setForm({ ...form, sabedoria: +e.target.value })} />
+                <Input placeholder="Inteligência" type="number" onChange={(e) => setForm({ ...form, inteligencia: +e.target.value })} />
+              </div>
+
               <DialogFooter>
                 <Button type="submit" className="bg-gradient-primary">Criar Ficha</Button>
               </DialogFooter>
@@ -98,52 +185,49 @@ const Fichas = () => {
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {fichas.map((f) => (
-          <article key={f.id} className="glow-card overflow-hidden">
-            <div className={`relative h-32 bg-gradient-to-br ${f.cor}`}>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent_60%)]" />
-              <div className="absolute bottom-3 left-5 right-5 flex items-end justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/80">{f.raca}</p>
-                  <h3 className="font-display text-xl text-white drop-shadow">{f.nome}</h3>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-background/70 backdrop-blur font-display text-lg border border-white/20">
-                  {f.nivel}
-                </div>
-              </div>
-            </div>
+          <article key={f.id} className="glow-card p-5">
+            <h3 className="font-display text-xl">{f.nome}</h3>
+            <p className="text-sm text-muted-foreground">{f.classe} • Nv. {f.nivel}</p>
 
-            <div className="p-5">
-              <div className="flex items-center gap-2 text-sm">
-                <Sparkles size={14} className="text-primary" />
-                <span className="font-medium">{f.classe}</span>
-                <span className="text-muted-foreground">· Nv. {f.nivel}</span>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <Heart size={14} className="mx-auto text-rose-400" />
-                  <p className="mt-1 font-display text-sm">{f.hp}</p>
-                  <p className="text-[10px] text-muted-foreground">HP</p>
-                </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <Shield size={14} className="mx-auto text-sky-400" />
-                  <p className="mt-1 font-display text-sm">{f.ca}</p>
-                  <p className="text-[10px] text-muted-foreground">CA</p>
-                </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <Swords size={14} className="mx-auto text-amber-400" />
-                  <p className="mt-1 font-display text-sm">+{f.ataque}</p>
-                  <p className="text-[10px] text-muted-foreground">ATQ</p>
-                </div>
-              </div>
-
-              <Button variant="outline" className="mt-4 w-full border-primary/40 hover:bg-primary/10">
-                Ver Ficha Completa
-              </Button>
-            </div>
+            <Button
+              className="mt-4 w-full"
+              onClick={() => {
+                setSelectedFicha(f);
+                setOpenModal(true);
+              }}
+            >
+              Ver Ficha Completa
+            </Button>
           </article>
         ))}
       </div>
+
+      {/* MODAL */}
+      <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ficha Completa</DialogTitle>
+          </DialogHeader>
+
+          {selectedFicha && (
+            <div className="space-y-2">
+              <p><strong>Nome:</strong> {selectedFicha.nome}</p>
+              <p><strong>Classe:</strong> {selectedFicha.classe}</p>
+              <p><strong>Raça:</strong> {selectedFicha.raca}</p>
+              <p><strong>Nível:</strong> {selectedFicha.nivel}</p>
+
+              <hr />
+
+              <p>HP: {selectedFicha.hp}</p>
+              <p>Força: {selectedFicha.forca}</p>
+              <p>Destreza: {selectedFicha.destreza}</p>
+              <p>Constituição: {selectedFicha.constituicao}</p>
+              <p>Sabedoria: {selectedFicha.sabedoria}</p>
+              <p>Inteligência: {selectedFicha.inteligencia}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
