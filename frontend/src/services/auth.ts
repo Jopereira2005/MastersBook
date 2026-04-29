@@ -1,4 +1,5 @@
 export interface User {
+  avatar: string;
   id: string;
   name: string;
   email: string;
@@ -45,6 +46,7 @@ export const authService = {
       name,
       email,
       password,
+      avatar: ""
     };
 
     users.push(newUser);
