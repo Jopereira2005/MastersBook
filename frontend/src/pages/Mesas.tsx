@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, Crown, Calendar } from "lucide-react";
+import { Plus, Users, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,15 +16,14 @@ interface Mesa {
   jogadores: number;
   maxJogadores: number;
   mestre: string;
-  proxima: string;
   sistema: string;
 }
 
 const initial: Mesa[] = [
-  { id: "1", nome: "Profecia das Sombras", descricao: "Uma escuridão antiga desperta. Sua party é a última esperança.", jogadores: 5, maxJogadores: 6, mestre: "Mestre Vael", proxima: "Sáb 20h", sistema: "D&D 5e" },
-  { id: "2", nome: "Crônicas de Eldoria", descricao: "Política, intriga e magia em um reino à beira do caos.", jogadores: 4, maxJogadores: 5, mestre: "Lyra Stormwind", proxima: "Sex 19h", sistema: "Pathfinder" },
-  { id: "3", nome: "Forja dos Deuses", descricao: "Heróis lendários enfrentam titãs em uma campanha épica.", jogadores: 3, maxJogadores: 6, mestre: "Theron Black", proxima: "Dom 18h", sistema: "Tormenta20" },
-  { id: "4", nome: "Sussurros da Lua Negra", descricao: "Mistério gótico em uma cidade onde os mortos não descansam.", jogadores: 6, maxJogadores: 6, mestre: "Morgana Vex", proxima: "Qua 21h", sistema: "Vampiro" },
+  { id: "1", nome: "Profecia das Sombras", descricao: "Uma escuridão antiga desperta. Sua party é a última esperança.", jogadores: 5, maxJogadores: 6, mestre: "Mestre Vael", sistema: "D&D 5e" },
+  { id: "2", nome: "Crônicas de Eldoria", descricao: "Política, intriga e magia em um reino à beira do caos.", jogadores: 4, maxJogadores: 5, mestre: "Lyra Stormwind", sistema: "Pathfinder" },
+  { id: "3", nome: "Forja dos Deuses", descricao: "Heróis lendários enfrentam titãs em uma campanha épica.", jogadores: 3, maxJogadores: 6, mestre: "Theron Black", sistema: "Tormenta20" },
+  { id: "4", nome: "Sussurros da Lua Negra", descricao: "Mistério gótico em uma cidade onde os mortos não descansam.", jogadores: 6, maxJogadores: 6, mestre: "Morgana Vex", sistema: "Vampiro" },
 ];
 
 const Mesas = () => {
@@ -36,7 +35,7 @@ const Mesas = () => {
     e.preventDefault();
     setMesas([
       ...mesas,
-      { id: crypto.randomUUID(), ...form, jogadores: 1, mestre: "Você", proxima: "A definir" },
+      { id: crypto.randomUUID(), ...form, jogadores: 1, mestre: "Você"},
     ]);
     setForm({ nome: "", descricao: "", sistema: "", maxJogadores: 5 });
     setOpen(false);
@@ -106,7 +105,6 @@ const Mesas = () => {
 
             <div className="mt-5 space-y-2 text-xs text-muted-foreground">
               <p className="flex items-center gap-2"><Crown size={14} className="text-primary" /> {m.mestre}</p>
-              <p className="flex items-center gap-2"><Calendar size={14} className="text-primary" /> Próxima: {m.proxima}</p>
               <p className="flex items-center gap-2"><Users size={14} className="text-primary" /> {m.jogadores} jogadores</p>
             </div>
 
