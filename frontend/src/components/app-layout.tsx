@@ -3,6 +3,7 @@ import { AppSidebar } from "./app-sidebar";
 import { Home, Dices, ScrollText, UserCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import Notifications from "@/components/Notifications";
 
 const mobileItems = [
   { to: "/home", label: "Início", icon: Home },
@@ -19,10 +20,13 @@ export const AppLayout = () => {
     <div className="flex min-h-screen w-full">
       <AppSidebar />
       <main className="flex-1 min-w-0 pb-24 md:pb-0">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-10 animate-fade-in">
-          <Outlet />
-        </div>
-      </main>
+  <div className="flex justify-end p-4">
+    <Notifications />
+  </div>
+  <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-10 animate-fade-in">
+    <Outlet />
+  </div>
+</main>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-sidebar/95 backdrop-blur-xl">
