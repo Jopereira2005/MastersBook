@@ -10,7 +10,8 @@ import heroImage from "@/assets/hero-rpg.jpg";
 
 const Login = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -30,7 +31,7 @@ const Login = () => {
       if (mode === "register") {
         if (password.length < 6) throw new Error("A senha deve ter ao menos 6 caracteres");
         if (password !== confirm) throw new Error("As senhas não coincidem");
-        await register(name, email, password);
+        await register(firstName, lastName, email, password);
         toast.success("Conta criada! Bem-vindo, aventureiro.");
       } else {
         await login(email, password);
@@ -85,22 +86,29 @@ const Login = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "register" && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Aventureiro</Label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      placeholder="Seu nome"
-                      className="pl-10 bg-input/50"
-                    />
-                  </div>
-                </div>
-              )}
+ {mode === "register" && (
+  <>
+    <div className="space-y-2">
+      <Label>Nome</Label>
+      <Input
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
+        required
+        placeholder="Seu nome"
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label>Sobrenome</Label>
+      <Input
+        value={lastName}
+        onChange={(e) => setLastName(e.target.value)}
+        required
+        placeholder="Seu sobrenome"
+      />
+    </div>
+  </>
+)}
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

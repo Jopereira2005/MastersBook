@@ -24,38 +24,70 @@ export const authService = {
     return data ? JSON.parse(data) : null;
   },
 
-  async login(email: string, password: string): Promise<User> {
-    const users = getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
+async login(email: string, password: string): Promise<User> {
+  const res = await fetch("https://mastersbook-api.onrender.com/api/users/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password })
+  });
 
-    if (!user) throw new Error("Email ou senha inválidos");
+  const data = await res.json();
+console.log("REGISTER RESPONSE:", data);
 
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
-    return user;
-  },
+  if (!res.ok) {
+    throw new Error(data.error || "Erro ao fazer login");
+  }
 
-  async register(name: string, email: string, password: string): Promise<User> {
-    const users = getUsers();
+  const user: User = {
+    id: data.user.id,
+    name: data.user.username,
+    email: data.user.email,
+    avatar: "",
+    password: "" // não precisa guardar senha
+  };
 
-    if (users.find(u => u.email === email)) {
-      throw new Error("Email já cadastrado");
-    }
+  localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
 
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      password,
-      avatar: ""
-    };
+  return user;
+},
 
-    users.push(newUser);
-    saveUsers(users);
+async register(firstName: string, lastName: string, email: string, password: string): Promise<User> {
+  const username = `${firstName}_${lastName}`.toLowerCase();
 
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(newUser));
+  const res = await fetch("https://mastersbook-api.onrender.com/api/users/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+    username,
+    firstName,
+    lastName,
+    email,
+    password
+  })
+});
 
-    return newUser;
-  },
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Erro ao cadastrar");
+  }
+
+  const user: User = {
+    id: data.user.id,
+    name: data.user.username,
+    email: data.user.email,
+    avatar: "",
+    password: ""
+  };
+
+  localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
+
+  return user;
+},
 
   logout() {
     localStorage.removeItem(CURRENT_KEY);
