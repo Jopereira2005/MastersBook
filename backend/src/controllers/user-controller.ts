@@ -74,9 +74,13 @@ export class UserController {
       res.status(201).json({
         message: 'Usuário cadastrado com sucesso!',
         user: { 
-          id: newUser.id, 
+          id: newUser.id,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
           username: newUser.username, 
-          email: newUser.email 
+          email: newUser.email,
+          avatarUrl: newUser.avatarUrl,
+          createdAt: newUser.createdAt
         }
       });
     } catch (error) {
@@ -98,7 +102,15 @@ export class UserController {
 
       res.status(200).json({
         message: 'Login realizado com sucesso!',
-        user: { id: user.id, username: user.username, email: user.email }
+        user: { 
+          id: user.id,
+          username: user.username, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName,
+          avatarUrl: user.avatarUrl,
+          createdAt: user.createdAt
+        }
       });
     } catch (error) {
       res.status(500).json({ error: 'Erro interno no servidor.', detail: error });
