@@ -690,6 +690,42 @@ paths:
         500:
           description: Erro interno do servidor
 
+  /tables/player/{userId}:
+    get:
+      summary: Lista as mesas onde o usuário participa como Jogador
+      description: Retorna as campanhas em que o jogador entrou, incluindo os dados do personagem que ele está usando naquela mesa específica.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Lista de mesas do jogador retornada com sucesso
+        400:
+          description: Erro de validação Zod
+
+  /tables/available/{userId}:
+    get:
+      summary: Lista mesas disponíveis para o usuário entrar (Lobby)
+      description: Retorna todas as mesas do sistema onde o usuário NÃO é o Mestre e ainda NÃO está participando como jogador.
+      tags: [Tables]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Lista de mesas disponíveis retornada com sucesso
+        400:
+          description: Erro de validação Zod
+
   /tables/get-by-gm/{gmId}:
     get:
       summary: Lista todas as mesas de um Mestre
@@ -865,8 +901,8 @@ paths:
         403:
           descripti"on: Sem permissão (requesterId não é o GM nem o próprio jogador)
         404:
-          description: Jogador não está na mesa
-          
+          description: Jogador não está na mesa 
+         
   # Rotas Systems
   /systems/get-all:
     get:
