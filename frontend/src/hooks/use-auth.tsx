@@ -1,19 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import { authService, User } from "@/services/auth";
+import { authService } from "@/services/auth.service";
+import { IUser } from "@/interfaces/user";
 
 interface AuthContextValue {
-  user: User | null;
+  user: IUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (username: string, firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
+  updateUser: (data: Partial<IUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,18 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const u = await authService.login(email, password);
+  const login = useCallback(async (identifier: string, password: string) => {
+    const u = await authService.login(identifier, password);
     setUser(u);
   }, []);
 
   const register = useCallback(async (
+    username: string,
     firstName: string,
     lastName: string,
     email: string,
     password: string
   ) => {
-    const u = await authService.register(firstName, lastName, email, password);
+    const u = await authService.register(username, firstName, lastName, email, password);
     setUser(u);
   }, []);
 
@@ -41,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const updateUser = useCallback((data: Partial<User>) => {
+  const updateUser = useCallback((data: Partial<IUser>) => {
     setUser((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...data };

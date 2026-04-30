@@ -1,11 +1,12 @@
 import { Sparkles, Sword } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-rpg.jpg";
 import { Link } from "react-router-dom";
 
 const Home = () => {
   const { user } = useAuth();
+  console.log(user);
 
   return (
     <div className="space-y-10">
@@ -18,7 +19,7 @@ const Home = () => {
         <h1 className="mt-2 font-display text-4xl md:text-5xl font-bold">
           Olá,{" "}
           <span className="gradient-text">
-            {user?.name?.split(" ")[0]}
+            {user.firstName.split(' ')[0]}
           </span>{" "}
         </h1>
 

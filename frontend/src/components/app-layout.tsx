@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./app-sidebar";
 import { Home, Dices, ScrollText, UserCircle, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import Notifications from "@/components/Notifications";
 
