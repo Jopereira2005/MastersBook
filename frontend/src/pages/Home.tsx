@@ -19,7 +19,7 @@ const Home = () => {
         <h1 className="mt-2 font-display text-4xl md:text-5xl font-bold">
           Olá,{" "}
           <span className="gradient-text">
-            {user.firstName.split(' ')[0]}
+            {user?.firstName || "Aventureiro"}
           </span>{" "}
         </h1>
 

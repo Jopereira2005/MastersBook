@@ -10,22 +10,23 @@ import { toast } from "sonner";
 const avatarOptions = ["🧙", "🧝", "🧚", "🦸", "🧛", "🧞", "🐉", "⚔️"];
 
 const Perfil = () => {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
 
-  const [nome, setNome] = useState(user?.name?.split(" ")[0] || "");
-  const [sobrenome, setSobrenome] = useState(
-    user?.name?.split(" ").slice(1).join(" ") || ""
-  );
+  const [nome, setNome] = useState(user?.firstName || "");
+  const [sobrenome, setSobrenome] = useState(user?.lastName || "");
+  const [avatar, setAvatar] = useState(user?.avatarUrl || "🧙");
 
-  const [avatar, setAvatar] = useState(user?.avatar || "🧙");
-
-  const handleSave = () => {
-    updateUser({ name: `${nome} ${sobrenome}`, avatar });
-    setEditing(false);
-    toast.success("Perfil atualizado!");
+  const handleSave = async () => {
+    try {
+      await updateProfile(nome, sobrenome, avatar);
+      setEditing(false);
+      toast.success("Perfil atualizado!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar");
+    }
   };
 
   const handleLogout = () => {
@@ -71,7 +72,7 @@ const Perfil = () => {
           </div>
 
           {/* Nome + Email exibido */}
-          <h2 className="mt-8 font-display text-3xl">{user?.name}</h2>
+          <h2 className="mt-8 font-display text-3xl">{`${user?.firstName} ${user?.lastName}`}</h2>
           <p className="text-muted-foreground">{user?.email}</p>
 
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
@@ -120,10 +121,8 @@ const Perfil = () => {
                 variant="outline"
                 onClick={() => {
                   setEditing(false);
-                  setNome(user?.name?.split(" ")[0] || "");
-                  setSobrenome(
-                    user?.name?.split(" ").slice(1).join(" ") || ""
-                  );
+                  setNome(user?.firstName || "");
+                  setSobrenome(user?.lastName || "");
                 }}
                 className="flex-1"
               >

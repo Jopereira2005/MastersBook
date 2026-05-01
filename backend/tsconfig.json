@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2022",
@@ -11,7 +12,9 @@
     "ignoreDeprecations": "6.0"
   },
   "include": [
-    "src/**/*",
+    "src/**/*"
+  ],
+  "files": [
     "server.ts"
   ],
   "exclude": [

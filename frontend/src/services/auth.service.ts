@@ -62,4 +62,35 @@ export const authService = {
   update(user: IUser) {
     localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
   },
+
+  async updateProfile(
+    id: string,
+    firstName: string,
+    lastName: string,
+    avatar: string
+  ): Promise<IUser> {
+    const username = `${firstName}_${lastName}`.toLowerCase();
+
+    const res = await api.patch(`/users/update/${id}`, {
+      username,
+      firstName,
+      lastName,
+      avatarUrl: avatar
+    });
+
+    const userData = res.data.user || res.data;
+
+    const updatedUser: IUser = {
+      id: userData.id,
+      username: userData.username,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      avatarUrl: userData.avatarUrl || null,
+    };
+
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(updatedUser));
+
+    return updatedUser;
+  },
 };
