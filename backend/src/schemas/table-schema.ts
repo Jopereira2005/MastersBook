@@ -58,6 +58,15 @@ export const removePlayerSchema = z.object({
   }),
 });
 
+// ==========================================
+// Parâmetro de ID de Usuário para Listagens
+// ==========================================
+export const tableUserIdParamSchema = z.object({
+  params: z.object({
+    userId: z.uuid({ message: "O ID do usuário inválido." }),
+  }),
+});
+
 // Extração de Tipos
 export type CreateTableInput = z.infer<typeof createTableSchema>['body'];
 export type UpdateTableInput = z.infer<typeof updateTableSchema>['body'];

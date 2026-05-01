@@ -1,6 +1,7 @@
 import { type Request, type Response } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../database/prisma.js';
+import { EmailSender } from '../utils/email-sender.js';
 
 import type { 
   RegisterUserInput, 
@@ -70,6 +71,8 @@ export class UserController {
       const newUser = await prisma.user.create({
         data: { username, firstName, lastName, email, password: hashedPassword },
       });
+
+      EmailSender.sendWelcomeEmail(newUser.email, newUser.firstName);
 
       res.status(201).json({
         message: 'Usuário cadastrado com sucesso!',

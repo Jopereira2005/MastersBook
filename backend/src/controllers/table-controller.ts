@@ -326,4 +326,66 @@ export class TableController {
       res.status(500).json({ error: 'Erro interno ao tentar remover o jogador da mesa.', detail: error });
     }
   }
+
+  // ==========================================
+  // Listar Mesas que o Usuário JÁ PARTICIPA (Como Jogador)
+  // ==========================================
+  async getPlayerTables(req: Request<{ userId: string }>, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      const tables = await prisma.table.findMany({
+        where: {
+          // Magia Prisma: Traz mesas onde existe "algum" jogador com este userId
+          players: { some: { userId: userId } }
+        },
+        include: {
+          gm: { select: { username: true, avatarUrl: true } },
+          system: { select: { name: true } },
+          _count: { select: { players: true } },
+          // Trazemos também o registro específico DESTE jogador para o Front-end saber qual ficha ele está usando
+          players: {
+            where: { userId: userId },
+            include: {
+              character: { select: { id: true, firstName: true, lastName: true, class: true, level: true, race: true, avatarUrl: true } }
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+
+      res.status(200).json(tables);
+    } catch (error) {
+      console.error('Erro ao buscar mesas do jogador:', error);
+      res.status(500).json({ error: 'Erro interno ao buscar as mesas do jogador.' });
+    }
+  }
+
+  // ==========================================
+  // Listar Mesas Disponíveis para Entrar (Lobby / Taverna)
+  // ==========================================
+  async getAvailableTables(req: Request<{ userId: string }>, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      const availableTables = await prisma.table.findMany({
+        where: {
+          gmId: { not: userId }, // O usuário não pode ser o Mestre
+          players: { none: { userId: userId } } // O usuário "nenhum" registro de TablePlayer nesta mesa
+        },
+        include: {
+          gm: { select: { username: true, avatarUrl: true } },
+          system: { select: { name: true } },
+          _count: { select: { players: true } }
+          // Nota: Não trazemos as fichas dos outros jogadores aqui para manter a listagem leve!
+        },
+        orderBy: { name: 'asc' }
+      });
+      console.log("Mesas disponíveis para o usuário", userId, availableTables);
+      res.status(200).json(availableTables);
+    } catch (error) {
+      console.error('Erro ao buscar mesas disponíveis:', error);
+      res.status(500).json({ error: 'Erro interno ao listar mesas disponíveis.' });
+    }
+  }
 }

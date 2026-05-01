@@ -8,7 +8,8 @@ import {
   tableIdParamSchema, 
   gmIdParamSchema,
   joinTableSchema,
-  removePlayerSchema
+  removePlayerSchema,
+  tableUserIdParamSchema
 } from '../schemas/table-schema.js';
 
 const tableRoutes = Router();
@@ -24,6 +25,10 @@ tableRoutes.get('/get-by-gm/:gmId', validate(gmIdParamSchema), tableController.g
 tableRoutes.patch('/update/:id', validate(updateTableSchema), tableController.updateTable.bind(tableController));
 tableRoutes.patch('/regenerate-code/:id', validate(tableIdParamSchema), tableController.regenerateInviteCode.bind(tableController));
 tableRoutes.delete('/delete/:id', validate(tableIdParamSchema), tableController.deleteTable.bind(tableController));
+
+// Rotas de Usuários
+tableRoutes.get('/player/:userId', validate(tableUserIdParamSchema), tableController.getPlayerTables.bind(tableController));
+tableRoutes.get('/available/:userId', validate(tableUserIdParamSchema), tableController.getAvailableTables.bind(tableController));
 
 // Rotas de Jogadores
 tableRoutes.post('/join', validate(joinTableSchema), tableController.joinTable.bind(tableController));
