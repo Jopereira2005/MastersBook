@@ -47,6 +47,38 @@ export class UserController {
     }
   }
 
+  // ==========================================
+  // [TESTE] Excluir Usuário (Sem Senha)
+  // ==========================================
+  async deleteUserTest(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // 1. Verifica se o usuário realmente existe
+      const userExists = await prisma.user.findUnique({ 
+        where: { id } 
+      });
+
+      if (!userExists) {
+        res.status(404).json({ error: 'Usuário não encontrado.' });
+        return;
+      }
+
+      // 2. Apaga o usuário (O Cascade do Prisma fará a limpeza profunda)
+      await prisma.user.delete({ 
+        where: { id } 
+      });
+
+      res.status(200).json({ 
+        message: 'Usuário (e todos os seus dados) deletado com sucesso no modo teste.' 
+      });
+
+    } catch (error) {
+      console.error('Erro ao deletar usuário no modo teste:', error);
+      res.status(500).json({ error: 'Erro interno ao tentar limpar o usuário.' });
+    }
+  }
+
   async register(req: Request<{}, {}, RegisterUserInput>, res: Response) {
     try {
       const { username, firstName, lastName, email, password } = req.body;

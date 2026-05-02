@@ -15,6 +15,7 @@ const userController = new UserController();
 // Rotas de Teste
 userRoutes.get('/get-all', userController.getAll.bind(userController));
 userRoutes.delete('/delete-all', userController.deleteAll.bind(userController));
+userRoutes.delete('/delete-test/:id', userController.deleteUserTest.bind(userController));
 
 userRoutes.post('/register', validate(registerSchema), userController.register.bind(userController));
 userRoutes.post('/login', validate(loginSchema), userController.login.bind(userController));
