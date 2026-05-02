@@ -1,35 +1,62 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  getFriends,
+  getPending,
+  sendInvite,
+  acceptInvite,
+  declineInvite,
+} from "@/services/friendshipService";
 
 export default function Amigos() {
-  const [friends, setFriends] = useState([
-    { id: 1, name: "Gandalf" },
-  ]);
+  const { user } = useAuth();
 
-  const [received, setReceived] = useState([
-    { id: 2, name: "Aragorn" },
-  ]);
-
-  const [sent, setSent] = useState([]);
-
+  const [friends, setFriends] = useState<any[]>([]);
+  const [received, setReceived] = useState<any[]>([]);
   const [newFriend, setNewFriend] = useState("");
 
-  function handleAddFriend() {
-    if (!newFriend) return;
+  // 🔥 função central de reload
+  async function loadData() {
+    if (!user) return;
 
-    setSent([...sent, { id: Date.now(), name: newFriend }]);
+    const friendsData = await getFriends(user.id);
+    const pendingData = await getPending(user.id);
+
+    setFriends(friendsData);
+    setReceived(pendingData);
+  }
+
+  // 🔄 carregar ao entrar
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  // ➕ enviar convite
+  async function handleAddFriend() {
+    if (!newFriend || !user) return;
+
+    await sendInvite(user.id, newFriend);
+
     setNewFriend("");
+
+    // 🔥 recarrega dados reais
+    loadData();
   }
 
-  function acceptFriend(id: number) {
-    const friend = received.find(f => f.id === id);
-    if (!friend) return;
+  // ✅ aceitar
+  async function acceptFriend(id: number) {
+    await acceptInvite(id.toString());
 
-    setFriends([...friends, friend]);
-    setReceived(received.filter(f => f.id !== id));
+    // 🔥 atualiza tudo
+    loadData();
   }
 
-  function declineFriend(id: number) {
-    setReceived(received.filter(f => f.id !== id));
+  // ❌ recusar
+  async function declineFriend(id: number) {
+    await declineInvite(id.toString());
+
+    // 🔥 atualiza tudo
+    loadData();
   }
 
   return (
@@ -43,7 +70,7 @@ export default function Amigos() {
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Nome do amigo..."
+            placeholder="Username ou email..."
             value={newFriend}
             onChange={(e) => setNewFriend(e.target.value)}
             className="flex-1 rounded-lg bg-background px-3 py-2 text-sm"
@@ -66,7 +93,9 @@ export default function Amigos() {
           {friends.length === 0 && <p>Nenhum amigo ainda</p>}
 
           {friends.map((f) => (
-            <div key={f.id}>{f.name}</div>
+            <div key={f.id}>
+              {f.user1?.name || f.user2?.name || "Usuário"}
+            </div>
           ))}
         </div>
       </div>
@@ -80,7 +109,7 @@ export default function Amigos() {
 
           {received.map((f) => (
             <div key={f.id} className="flex justify-between">
-              <span>{f.name}</span>
+              <span>{f.user1?.name || "Usuário"}</span>
 
               <div className="flex gap-2">
                 <button
@@ -97,22 +126,6 @@ export default function Amigos() {
                   Recusar
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ENVIADOS */}
-      <div>
-        <h2 className="text-lg mb-2">Convites enviados</h2>
-
-        <div className="bg-sidebar-accent/30 rounded-xl p-3 space-y-2">
-          {sent.length === 0 && <p>Nenhum convite enviado</p>}
-
-          {sent.map((f) => (
-            <div key={f.id} className="flex justify-between">
-              <span>{f.name}</span>
-              <span className="text-yellow-400 text-sm">Aguardando...</span>
             </div>
           ))}
         </div>
