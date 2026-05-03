@@ -77,9 +77,9 @@ const Login = () => {
             <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow animate-pulse-glow">
               <Sparkles className="h-7 w-7 text-primary-foreground" />
             </div>
-            <h1 className="font-display text-4xl font-bold gradient-text text-glow">Eldritch Quest</h1>
+            <h1 className="font-display text-4xl font-bold gradient-text text-glow">Master's Book</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Forje seu destino entre as sombras e a magia
+              Viva a magia do RPG online
             </p>
           </div>
 

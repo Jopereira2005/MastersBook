@@ -28,8 +28,8 @@ export const AppSidebar = () => {
           <Sparkles className="h-5 w-5 text-primary-foreground" />
         </div>
         <div>
-          <p className="font-display text-lg leading-none gradient-text">Eldritch</p>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Quest</p>
+          <p className="font-display text-lg leading-none gradient-text">Master's</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Book</p>
         </div>
       </div>
 
