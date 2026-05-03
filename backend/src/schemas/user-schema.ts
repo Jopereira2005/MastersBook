@@ -38,7 +38,7 @@ export const updateProfileSchema = z.object({
     username: z.string().min(3, "Username precisa de no mínimo 3 caracteres.").optional(),
     firstName: z.string().min(2, "Nome precisa de no mínimo 2 caracteres.").optional(),
     lastName: z.string().min(2, "Sobrenome precisa de no mínimo 2 caracteres.").optional(),
-    avatarUrl: z.url("URL inválida da imagem.").optional(),
+    avatarUrl: z.string().optional(),
   }),
 });
 
