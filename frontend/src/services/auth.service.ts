@@ -1,22 +1,24 @@
 import { api } from "./api";
 import { IUser } from "@/interfaces/user";
 
-const CURRENT_KEY = "rpg_current_user";
+const CURRENT_KEY = "@MastersBook:user";
 
 export const authService = {
-  // Retorna o usuário logado atualmente no localStorage
+  // Retorna o utilizador logado atualmente (LocalStorage)
   current(): IUser | null {
     const data = localStorage.getItem(CURRENT_KEY);
     return data ? JSON.parse(data) : null;
   },
 
-  // Recebe um 'identifier' (que pode ser email ou username) e a senha
+
+  // Faz o login na API
   async login(identifier: string, password: string): Promise<IUser> {
-    // Mandamos como 'login' para o backend saber que pode ser qualquer um dos dois
-    const res = await api.post("/users/login", { login: identifier, password });
+    const response = await api.post("/users/login", { 
+      login: identifier, 
+      password 
+    });
     
-    // Pega o user que veio do backend
-    const userData = res.data.user || res.data;
+    const userData = response.data.user || response.data;
 
     const user: IUser = {
       id: userData.id,
@@ -31,8 +33,16 @@ export const authService = {
     return user;
   },
 
-  async register(username: string, firstName: string, lastName: string, email: string, password: string): Promise<IUser> {
-    const res = await api.post("/users/register", {
+  // Cadastra um novo utilizador
+
+  async register(
+    username: string, 
+    firstName: string, 
+    lastName: string, 
+    email: string, 
+    password: string
+  ): Promise<IUser> {
+    const response = await api.post("/users/register", {
       username,
       firstName,
       lastName,
@@ -40,7 +50,7 @@ export const authService = {
       password
     });
     
-    const userData = res.data.user || res.data;
+    const userData = response.data.user || response.data;
 
     const user: IUser = {
       id: userData.id,
@@ -55,42 +65,35 @@ export const authService = {
     return user;
   },
 
-  logout() {
-    localStorage.removeItem(CURRENT_KEY);
+
+   // Envia os novos dados para o backend e atualiza o LocalStorage
+  async updateProfile(userId: string, data: Partial<IUser>): Promise<IUser> {
+    try {
+      // Faz a chamada PATCH para o backend
+      const response = await api.patch<IUser>(`/users/update/${userId}`, data);
+      const updatedUser = response.data;
+
+      // Sincroniza o LocalStorage com os novos dados
+      this.update(updatedUser);
+
+      return updatedUser;
+    } catch (error: any) {
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        "Erro ao atualizar os dados do aventureiro.";
+      throw new Error(errorMessage);
+    }
   },
 
+  // Atualiza apenas os dados locais (LocalStorage)
   update(user: IUser) {
     localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
   },
 
-  async updateProfile(
-    id: string,
-    firstName: string,
-    lastName: string,
-    avatar: string
-  ): Promise<IUser> {
-    const username = `${firstName}_${lastName}`.toLowerCase();
-
-    const res = await api.patch(`/users/update/${id}`, {
-      username,
-      firstName,
-      lastName,
-      avatarUrl: avatar
-    });
-
-    const userData = res.data.user || res.data;
-
-    const updatedUser: IUser = {
-      id: userData.id,
-      username: userData.username,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      avatarUrl: userData.avatarUrl || null,
-    };
-
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(updatedUser));
-
-    return updatedUser;
-  },
+  
+  // Encerra a sessão
+  logout() {
+    localStorage.removeItem(CURRENT_KEY);
+  }
 };

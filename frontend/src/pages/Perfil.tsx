@@ -1,152 +1,187 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Camera, LogOut, User as UserIcon, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Mail, Save, X, Edit2, Loader2, AtSign, Check } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-const avatarOptions = ["🧙", "🧝", "🧚", "🦸", "🧛", "🧞", "🐉", "⚔️"];
+// Lista de Avatars (Emojis) disponíveis
+const AVAILABLE_AVATARS = ["🧙‍♂️", "🧝‍♂️", "🧛", "🧟", "🐲", "⚔️", "🛡️", "🏹", "📜", "💎", "🌑", "🔥"];
 
 const Perfil = () => {
-  const { user, updateProfile, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    firstName: "",
+    lastName: "",
+    avatarUrl: "",
+  });
 
-  const [nome, setNome] = useState(user?.firstName || "");
-  const [sobrenome, setSobrenome] = useState(user?.lastName || "");
-  const [avatar, setAvatar] = useState(user?.avatarUrl || "🧙");
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        username: user.username || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        avatarUrl: user.avatarUrl || AVAILABLE_AVATARS[0],
+      });
+    }
+  }, [user]);
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      await updateProfile(nome, sobrenome, avatar);
-      setEditing(false);
-      toast.success("Perfil atualizado!");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao atualizar");
+      await updateProfile(formData);
+      setIsEditing(false);
+      toast.success("Perfil atualizado com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar perfil");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleCancel = () => {
+    setIsEditing(false);
+    if (user) {
+      setFormData({
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatarUrl: user.avatarUrl || AVAILABLE_AVATARS[0],
+      });
+    }
   };
 
+  if (!user) return null;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <header className="text-center">
-        <p className="text-sm uppercase tracking-[0.2em] text-primary">
-          Aventureiro
-        </p>
-        <h1 className="mt-2 font-display text-4xl font-bold">
-          Meu Perfil
-        </h1>
+    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+      <header>
+        <p className="text-sm uppercase tracking-[0.2em] text-primary font-semibold">Configurações</p>
+        <h1 className="mt-2 font-display text-4xl font-bold text-white">Seu Perfil</h1>
       </header>
 
-      <section className="glow-card p-8">
-        <div className="flex flex-col items-center text-center">
-          <div className="relative">
-            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-primary text-6xl shadow-glow animate-pulse-glow">
-              {avatar}
+      <div className="grid gap-8 md:grid-cols-[300px_1fr]">
+        {/* Lado Esquerdo: Seleção de Avatar */}
+        <div className="flex flex-col items-center space-y-6">
+          <div className="flex h-40 w-40 items-center justify-center rounded-full border-4 border-primary/20 bg-zinc-900 text-7xl shadow-glow">
+            {formData.avatarUrl}
+          </div>
+          
+          {isEditing && (
+            <div className="grid grid-cols-4 gap-2 p-4 glass-card border-primary/10 animate-in fade-in zoom-in-95">
+              {AVAILABLE_AVATARS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, avatarUrl: emoji })}
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-2xl transition-all hover:bg-primary/20 ${
+                    formData.avatarUrl === emoji ? "bg-primary/30 ring-2 ring-primary" : "bg-zinc-800/50"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground text-center">
+            {isEditing ? "Escolha seu novo símbolo" : "Sua identidade atual"}
+          </p>
+        </div>
+
+        {/* Lado Direito: Formulário */}
+        <div className="glass-card p-8 border-primary/10">
+          <form onSubmit={handleSave} className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-display font-semibold gradient-text uppercase tracking-wider">Dados da Conta</h2>
+              
+              {!isEditing ? (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsEditing(true)}
+                  className="border-primary/30 text-primary hover:bg-primary/10 transition-all hover:scale-105"
+                >
+                  <Edit2 size={16} className="mr-2" /> Editar Perfil
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleCancel} className="text-muted-foreground">
+                    <X size={16} className="mr-2" /> Cancelar
+                  </Button>
+                  <Button type="submit" size="sm" disabled={loading} className="bg-gradient-primary shadow-glow">
+                    {loading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+                    Salvar
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {editing && (
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1 rounded-full border border-primary/40 bg-card/95 p-1.5 backdrop-blur shadow-glow">
-                {avatarOptions.map((a) => (
-                  <button
-                    key={a}
-                    onClick={() => setAvatar(a)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-lg transition-all ${
-                      avatar === a
-                        ? "bg-primary scale-110"
-                        : "hover:bg-primary/20"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
+            <div className="grid gap-6 sm:grid-cols-2">
+              {/* Email - Exibição Fixa (Não editável) */}
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-zinc-500 text-xs uppercase tracking-widest">E-mail de Contato (Vínculo da Conta)</Label>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800 text-muted-foreground italic">
+                  <Mail size={16} className="text-primary/40" />
+                  <span>{user.email}</span>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Nome + Email exibido */}
-          <h2 className="mt-8 font-display text-3xl">{`${user?.firstName} ${user?.lastName}`}</h2>
-          <p className="text-muted-foreground">{user?.email}</p>
+              {/* Username */}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="username" className="text-zinc-400">Nickname (Nome de Usuário)</Label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+                  <Input 
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+                    disabled={!isEditing}
+                    className="pl-10 bg-background/50 border-primary/20 disabled:opacity-50 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
 
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-            <Camera size={12} /> Membro desde 2026
-          </div>
+              {/* Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-zinc-400">Primeiro Nome</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+                  <Input 
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    disabled={!isEditing}
+                    className="pl-10 bg-background/50 border-primary/20 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Sobrenome */}
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-zinc-400">Sobrenome</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+                  <Input 
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    disabled={!isEditing}
+                    className="pl-10 bg-background/50 border-primary/20 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
-
-        {/* INPUTS (sem email) */}
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <UserIcon size={14} /> Nome
-            </Label>
-            <Input
-              value={nome}
-              disabled={!editing}
-              onChange={(e) => setNome(e.target.value)}
-              className="bg-input/50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <UserIcon size={14} /> Sobrenome
-            </Label>
-            <Input
-              value={sobrenome}
-              disabled={!editing}
-              onChange={(e) => setSobrenome(e.target.value)}
-              className="bg-input/50"
-            />
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          {editing ? (
-            <>
-              <Button
-                onClick={handleSave}
-                className="flex-1 bg-gradient-primary shadow-glow"
-              >
-                <Save size={16} className="mr-2" /> Salvar Alterações
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditing(false);
-                  setNome(user?.firstName || "");
-                  setSobrenome(user?.lastName || "");
-                }}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </>
-          ) : (
-            <Button
-              onClick={() => setEditing(true)}
-              className="flex-1 bg-gradient-primary shadow-glow"
-            >
-              Editar Perfil
-            </Button>
-          )}
-
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-          >
-            <LogOut size={16} className="mr-2" /> Sair
-          </Button>
-        </div>
-      </section>
+      </div>
     </div>
   );
 };
