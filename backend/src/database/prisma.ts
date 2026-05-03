@@ -1,7 +1,7 @@
 import 'dotenv/config'; // Garantia dupla de que as variáveis foram lidas
 import pg from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../../generated/prisma/client.js'; 
+import { PrismaClient } from '../../generated/prisma/index.js'; 
 
 const connectionString = process.env.DATABASE_URL;
 
