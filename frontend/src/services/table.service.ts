@@ -1,114 +1,103 @@
-import axios from 'axios';
-import { api } from './api.ts'; // Sua instância base do axios configurada
-import { ITable } from '../interfaces/table';
+import { api } from "./api";
+import { ITable } from "@/interfaces/table";
 
-// DTO (Data Transfer Object) para criação: define o que a API espera receber
 export interface CreateTableDTO {
   name: string;
-  description: string;
+  description?: string;
   systemId: string;
   gmId: string;
 }
 
-// DTO para atualizar uma mesa (todos os campos opcionais)
-export type UpdateTableDTO = Partial<CreateTableDTO>;
-
-// DTO para entrar na mesa usando o código de convite
-export interface JoinTableDTO {
-  inviteCode: string;
-  userId: string;
-  characterId?: string; 
-}
-
-export const TableService = {
-  /**
-   * Busca todas as mesas do sistema (ou as mesas do usuário logado, 
-   * dependendo de como você configurou a rota '/tables' no backend)
-   */
-  getAll: async (): Promise<ITable[]> => {
+export const tableService = {
+  async create(data: Partial<ITable>): Promise<ITable> {
     try {
-      const response = await api.get<ITable[]>('/tables');
+      const response = await api.post<ITable>('/tables/create', data);
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
+    } catch (error: any) {
+      // Tratamento para capturar erros de validação do Zod no backend
+      if (error.response?.data?.errors) {
+         throw error.response.data;
       }
-      throw { message: "Erro inesperado ao buscar mesas." };
+      
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        "Erro ao invocar a nova mesa.";
+      throw new Error(errorMessage);
     }
   },
 
   /**
-   * Busca apenas as mesas onde o usuário específico é o Mestre (GM)
+   * Busca as mesas onde o usuário está participando como Jogador.
+   * Rota: /tables/player/{userId}
    */
-  getByGm: async (gmId: string): Promise<ITable[]> => {
+  async getByPlayer(userId: string): Promise<ITable[]> {
     try {
-      const response = await api.get<ITable[]>(`/tables/gm/${gmId}`);
+      const response = await api.get<ITable[]>(`/tables/player/${userId}`);
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
-      }
-      throw { message: "Erro inesperado ao buscar as mesas do Mestre." };
+    } catch (error: any) {
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        "Erro ao buscar as mesas em que você é jogador.";
+      throw new Error(errorMessage);
     }
   },
 
-  /**
-   * Cria uma nova mesa
-   */
-  create: async (data: CreateTableDTO): Promise<ITable> => {
+  async getAvailable(userId: string): Promise<ITable[]> {
     try {
-      const response = await api.post<ITable>('/tables', data);
+      const response = await api.get<ITable[]>(`/tables/available/${userId}`);
       return response.data;
-    } catch (error) {
-      // Retorna o erro exato do backend (ex: Erros de validação do Zod)
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data; 
-      }
-      throw { message: "Erro inesperado ao criar a mesa." };
+    } catch (error: any) {
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        "Erro ao buscar as mesas disponíveis na Taverna.";
+      throw new Error(errorMessage);
     }
   },
 
-  /**
-   * Atualiza os dados de uma mesa existente
-   */
-  update: async (id: string, data: UpdateTableDTO): Promise<ITable> => {
+  async getByGm(gmId: string): Promise<ITable[]> {
     try {
-      const response = await api.patch<ITable>(`/tables/${id}`, data);
+      const response = await api.get<ITable[]>(`/tables/get-by-gm/${gmId}`);
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
-      }
-      throw { message: "Erro inesperado ao atualizar a mesa." };
+    } catch (error: any) {
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        "Erro ao buscar as suas campanhas de Mestre.";
+      throw new Error(errorMessage);
     }
   },
 
-  /**
-   * Deleta uma mesa específica pelo ID
-   */
-  delete: async (id: string): Promise<void> => {
+  async updateTable(id: string, data: { name: string; description: string }): Promise<ITable> {
     try {
-      await api.delete(`/tables/${id}`);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
-      }
-      throw { message: "Erro inesperado ao deletar a mesa." };
+      const response = await api.patch<ITable>(`/tables/update/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Erro ao atualizar a mesa.");
     }
   },
 
-  /**
-   * Entra em uma mesa utilizando o código de convite (inviteCode)
-   */
-  join: async (data: JoinTableDTO): Promise<any> => {
+  async regenerateInviteCode(id: string): Promise<{ newInviteCode: string }> {
     try {
-      const response = await api.post('/tables/join', data);
+      const response = await api.patch(`/tables/regenerate-code/${id}`);
+      console.log("Código de convite regenerado:", response.data);
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        throw error.response.data;
-      }
-      throw { message: "Erro inesperado ao tentar entrar na mesa." };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Erro ao gerar novo código.");
+    }
+  },
+
+  async deleteTable(tableId: string): Promise<void> {
+    try {
+      await api.delete(`/tables/delete/${tableId}`);
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        "Erro ao eliminar a mesa de RPG."
+      );
     }
   }
 };
