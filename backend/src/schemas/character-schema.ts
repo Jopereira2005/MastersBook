@@ -23,7 +23,6 @@ export const createCharacterSchema = z.object({
 });
 
 // Extrai o Type para usarmos no Controller
-export type CreateCharacterInput = z.infer<typeof createCharacterSchema>['body'];
 
 export const updateCharacterSchema = z.object({
   params: z.object({
@@ -49,7 +48,6 @@ export const updateCharacterSchema = z.object({
 });
 
 // Extrai o Type para usarmos no CharacterController
-export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>['body'];
 
 export const getDeleteCharacterIdSchema = z.object({
   params: z.object({
@@ -62,3 +60,13 @@ export const getCharacterUserIdSchema = z.object({
     userId: z.uuid({ message: "ID do usuário inválido." }),
   }),
 });
+
+export const userAndSystemParamSchema = z.object({
+  params: z.object({
+    userId: z.uuid({ message: "O ID do usuario inválido." }),
+    systemId: z.uuid({ message: "O ID do sistema inválido." }),
+  }),
+});
+
+export type CreateCharacterInput = z.infer<typeof createCharacterSchema>['body'];
+export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>['body'];

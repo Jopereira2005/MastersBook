@@ -204,6 +204,35 @@ export class CharacterController {
     }
   }
 
+  async getUserCharactersBySystem(req: Request<{ userId: string, systemId: string }>, res: Response) {
+    try {
+      const { userId, systemId } = req.params;
+
+      const characters = await prisma.character.findMany({
+        where: {
+          userId: userId,
+          systemId: systemId
+        },
+        // Otimização: Trazemos apenas os dados necessários para exibir na lista/card
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          race: true,
+          class: true,
+          level: true,
+          avatarUrl: true
+        },
+        orderBy: { firstName: 'asc' } // Ordena alfabeticamente
+      });
+
+      res.status(200).json(characters);
+    } catch (error) {
+      console.error('Erro ao buscar fichas por sistema:', error);
+      res.status(500).json({ error: 'Erro interno ao buscar as fichas do utilizador.' });
+    }
+  }
+
   async deleteCharacter(req: Request<{ id: string }>, res: Response) {
     try {
       const { id } = req.params;

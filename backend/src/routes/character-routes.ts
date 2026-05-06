@@ -6,8 +6,8 @@ import {
   createCharacterSchema,
   updateCharacterSchema, 
   getDeleteCharacterIdSchema,
-  getCharacterUserIdSchema
-
+  getCharacterUserIdSchema,
+  userAndSystemParamSchema
 } from '../schemas/character-schema.js';
 
 import { CharacterController } from '../controllers/character-controller.js';
@@ -23,6 +23,7 @@ characterRoutes.post('/create', validate(createCharacterSchema), characterContro
 characterRoutes.patch('/update/:id', validate(updateCharacterSchema), characterController.updateCharacter.bind(characterController));
 characterRoutes.get('/:id', validate(getDeleteCharacterIdSchema), characterController.getCharacterById.bind(characterController));
 characterRoutes.get('/user/:userId', validate(getCharacterUserIdSchema), characterController.getCharactersByUserId.bind(characterController));
+characterRoutes.get('/user/:userId/system/:systemId', validate(userAndSystemParamSchema), characterController.getUserCharactersBySystem.bind(characterController));
 characterRoutes.delete('/delete/:id', validate(getDeleteCharacterIdSchema), characterController.deleteCharacter.bind(characterController));
 
 export { characterRoutes };
