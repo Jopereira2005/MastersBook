@@ -391,6 +391,30 @@ paths:
         200:
           description: Lista de fichas retornada com sucesso (Pode ser um array vazio)
 
+  /characters/user/{userId}/system/{systemId}:
+    get:
+      summary: Lista as Fichas de um Utilizador por Sistema
+      description: Retorna as fichas (enxutas, sem atributos JSON).
+      tags: [Characters]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: systemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Lista de personagens retornada com sucesso
+        400:
+          description: Erro de validação nos parâmetros
+
   /characters/update/{id}:
     patch:
       summary: Atualiza dados de uma ficha (Ex: Alterar HP durante a mesa)
