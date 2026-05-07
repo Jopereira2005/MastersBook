@@ -1,18 +1,26 @@
 import { useState, useEffect } from "react";
-import { User, Mail, Save, X, Edit2, Loader2, AtSign, Check } from "lucide-react";
+import { User, Mail, Save, X, Edit2, Loader2, AtSign, Check, LogOut, Trash2, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+import { userService } from "@/services/user.service";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+
 // Lista de Avatars (Emojis) disponíveis
 const AVAILABLE_AVATARS = ["🧙‍♂️", "🧝‍♂️", "🧛", "🧟", "🐲", "⚔️", "🛡️", "🏹", "📜", "💎", "🌑", "🔥"];
 
 const Perfil = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth(); // <-- logout adicionado aqui
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Novos estados para exclusão de conta
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
 
   const [formData, setFormData] = useState({
     username: "",
@@ -55,6 +63,29 @@ const Perfil = () => {
         lastName: user.lastName,
         avatarUrl: user.avatarUrl || AVAILABLE_AVATARS[0],
       });
+    }
+  };
+
+  // Funções de Saída e Exclusão
+  const handleLogout = () => {
+    logout();
+    toast.success("Você deixou a taverna. Até logo, aventureiro!");
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!passwordConfirmation) {
+      return toast.error("É necessário informar a senha para confirmar o exílio.");
+    }
+
+    setIsDeleting(true);
+    try {
+      await userService.deleteAccount(passwordConfirmation);
+      toast.success("Seu rastro foi apagado do MastersBook.");
+      logout(); // Desloga e limpa a sessão após deletar
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao deletar conta.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -182,6 +213,69 @@ const Perfil = () => {
           </form>
         </div>
       </div>
+
+      {/* NOVA SEÇÃO DE SAÍDA E SEGURANÇA */}
+      <section className="space-y-6 pt-10 border-t border-border/50">
+        
+        {/* LOGOUT */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl border border-border bg-card/20">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Encerrar Sessão</h3>
+            <p className="text-sm text-muted-foreground">Saia da sua conta com segurança.</p>
+          </div>
+          <Button variant="outline" onClick={handleLogout} className="border-primary/40 text-primary hover:bg-primary/10">
+            <LogOut size={18} className="mr-2" /> Sair do Master'sBook
+          </Button>
+        </div>
+
+        {/* ZONA DE PERIGO */}
+        <div className="p-6 rounded-2xl border border-destructive/20 bg-destructive/5 space-y-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <ShieldAlert size={20} />
+            <h3 className="font-display font-bold uppercase tracking-wider">Zona de Perigo</h3>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground flex-1 min-w-[250px]">
+              Ao deletar sua conta, todos os seus personagens, mesas e conquistas serão perdidos para sempre no Vazio.
+            </p>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteModal(true)}
+              className="shrink-0 bg-red-900/20 text-red-500 border border-red-900/50 hover:bg-red-600 hover:text-white transition-all"
+            >
+              <Trash2 size={18} className="mr-2" /> Deletar Perfil
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* MODAL DE CONFIRMAÇÃO COM SENHA */}
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setPasswordConfirmation("");
+        }}
+        onConfirm={handleDeleteAccount}
+        loading={isDeleting}
+        title="Exílio Permanente"
+        description="Esta ação é irreversível. Para confirmar que você é o proprietário desta conta e deseja destruí-la, por favor, digite sua senha abaixo:"
+      >
+        {/* O children que criamos no ConfirmDialog recebe este input de senha */}
+        <div className="mt-4 space-y-2 text-left">
+          <Label htmlFor="confirm-pass" className="text-xs text-muted-foreground uppercase tracking-widest">Sua Senha Mestra</Label>
+          <Input
+            id="confirm-pass"
+            type="password"
+            placeholder="Digite sua senha..."
+            value={passwordConfirmation}
+            onChange={(e) => setPasswordConfirmation(e.target.value)}
+            className="bg-background/50 border-red-500/30 focus-visible:ring-red-500"
+          />
+        </div>
+      </ConfirmDialog>
+
     </div>
   );
 };

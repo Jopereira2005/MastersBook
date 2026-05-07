@@ -3,7 +3,7 @@ import { IUser } from "@/interfaces/user";
 
 const CURRENT_KEY = "@MastersBook:user";
 
-export const authService = {
+export const userService = {
   // Retorna o utilizador logado atualmente (LocalStorage)
   current(): IUser | null {
     const data = localStorage.getItem(CURRENT_KEY);
@@ -95,5 +95,17 @@ export const authService = {
   // Encerra a sessão
   logout() {
     localStorage.removeItem(CURRENT_KEY);
+  },
+
+  async deleteAccount(password: string): Promise<void> {
+    try {
+      await api.delete("/users/delete", { data: { password } });
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        "Erro ao deletar o perfil. Verifique a sua senha."
+      );
+    }
   }
 };
