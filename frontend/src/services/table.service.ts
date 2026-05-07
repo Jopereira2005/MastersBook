@@ -1,3 +1,4 @@
+import { table } from "console";
 import { api } from "./api";
 import { ITable } from "@/interfaces/table";
 
@@ -97,6 +98,18 @@ export const tableService = {
         error.response?.data?.message || 
         error.response?.data?.error || 
         "Erro ao eliminar a mesa de RPG."
+      );
+    }
+  },
+
+  async joinTable(inviteCode: string, userId: string, characterId: string): Promise<void> {
+    try {
+      await api.post("/tables/join", { inviteCode, userId, characterId });
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        "Erro ao tentar entrar na campanha. Verifique o código e tente novamente."
       );
     }
   }
