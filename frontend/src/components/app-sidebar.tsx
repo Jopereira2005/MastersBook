@@ -1,8 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Dices, ScrollText, UserCircle, LogOut, Sparkles } from "lucide-react";
+import { Home, Dices, ScrollText, UserCircle, LogOut, Sparkles, Users, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { Users } from "lucide-react";
 
 const items = [
   { to: "/home", label: "Início", icon: Home },
@@ -60,11 +59,15 @@ export const AppSidebar = () => {
       <div className="border-t border-sidebar-border p-3">
         <div className="mb-2 flex items-center gap-3 rounded-xl bg-sidebar-accent/50 px-3 py-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary text-sm font-semibold text-primary-foreground">
-            {user?.firstName?.[0]?.toUpperCase() || "?"}
+            { user.avatarUrl && user.avatarUrl.length < 2 ? (
+              <span className="text-base leading-none">{ user.avatarUrl }</span>
+            ) : (
+              <span className="text-xs">{user.firstName.charAt(0).toUpperCase() + user.lastName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{`${user?.firstName} ${user?.lastName}`}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+            <p className="truncate text-sm font-medium">{`${user.firstName} ${user.lastName}`}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
           </div>
         </div>
         <button

@@ -1,32 +1,29 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./app-sidebar";
-import { Home, Dices, ScrollText, UserCircle, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { Home, Dices, ScrollText, UserCircle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Notifications from "@/components/Notifications";
 
 const mobileItems = [
   { to: "/home", label: "Início", icon: Home },
-  { to: "/mesa", label: "Mesas", icon: Dices },
   { to: "/fichas", label: "Fichas", icon: ScrollText },
-  { to: "/perfil", label: "Perfil", icon: UserCircle },
+  { to: "/mesa", label: "Mesas", icon: Dices },
+  { to: "/amigos", label: "Amigos", icon: Users },
+  { to: "/perfil", label: "Perfil", icon: UserCircle }
 ];
 
 export const AppLayout = () => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar />
       <main className="flex-1 min-w-0 pb-24 md:pb-0">
-  <div className="flex justify-end p-4">
-    <Notifications />
-  </div>
-  <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-10 animate-fade-in">
-    <Outlet />
-  </div>
-</main>
+        <div className="flex justify-end p-4">
+          <Notifications />
+        </div>
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-10 animate-fade-in">
+          <Outlet />
+        </div>
+      </main>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-sidebar/95 backdrop-blur-xl">
@@ -46,15 +43,6 @@ export const AppLayout = () => {
               {label}
             </NavLink>
           ))}
-          <button
-            onClick={() => {
-              logout();
-              navigate("/");
-            }}
-            className="flex flex-col items-center gap-1 py-3 text-[11px] text-muted-foreground"
-          >
-            <LogOut size={20} /> Sair
-          </button>
         </div>
       </nav>
     </div>

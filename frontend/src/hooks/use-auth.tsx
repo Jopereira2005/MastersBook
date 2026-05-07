@@ -7,7 +7,7 @@ import {
   useState, 
   ReactNode 
 } from "react";
-import { authService } from "@/services/auth.service"; // 👈 Importação correta!
+import { userService } from "@/services/user.service"; // 👈 Importação correta!
 import { IUser } from "@/interfaces/user";
 
 interface AuthContextValue {
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Busca o usuário no LocalStorage ao carregar o app
   useEffect(() => {
-    const savedUser = authService.current();
+    const savedUser = userService.current();
     if (savedUser) {
       setUser(savedUser);
     }
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const u = await authService.login(identifier, password);
+    const u = await userService.login(identifier, password);
     setUser(u);
   }, []);
 
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ) => {
-    const u = await authService.register(username, firstName, lastName, email, password);
+    const u = await userService.register(username, firstName, lastName, email, password);
     setUser(u);
   }, []);
 
@@ -64,14 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user?.id) throw new Error("Usuário não autenticado.");
 
     // Chama a service (que já atualiza o LocalStorage)
-    const updatedUser: any = await authService.updateProfile(user.id, data);
+    const updatedUser: any = await userService.updateProfile(user.id, data);
     console.log("Perfil atualizado:", updatedUser);
     // Atualiza o Estado Global do React para refletir a mudança na UI instantaneamente
     setUser(updatedUser.user);
   }, [user]);
 
   const logout = useCallback(() => {
-    authService.logout();
+    userService.logout();
     setUser(null);
   }, []);
 
