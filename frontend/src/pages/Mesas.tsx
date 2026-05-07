@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Plus, Loader2, Users, Crown, Shield } from "lucide-react";
+import { Plus, Loader2, Users, Crown, Shield, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+import { JoinTableForm } from "@/components/join-table-form";
 import { TableCard } from "@/components/table-card";
 import { TableForm } from "@/components/table-form";
 import { tableService } from "@/services/table.service";
@@ -20,6 +21,8 @@ const Mesas = () => {
   const [availableTables, setAvailableTables] = useState<ITable[]>([]);
   const [systems, setSystems] = useState<ISystem[]>([]);
 
+  const [openJoin, setOpenJoin] = useState(false);
+  const [joiningTable, setJoiningTable] = useState<ITable | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openCreate, setOpenCreate] = useState(false);
   const [editingTable, setEditingTable] = useState<ITable | null>(null);
@@ -53,13 +56,15 @@ const Mesas = () => {
   const handleAction = (tableId: string) => {
     const tableToEdit = gmTables.find((t) => t.id === tableId);
     const tableToPlay = playerTables.find((t) => t.id === tableId);
+    const availableTable = availableTables.find((t) => t.id === tableId); // <-- NOVO!
 
     if (tableToEdit) {
       setEditingTable(tableToEdit);
     } else if (tableToPlay) {
       toast.info("Abrindo sessão de jogo...");
-    } else {
-      toast.info("A entrar na campanha como convidado...");
+      // navigate(`/game/${tableId}`);
+    } else if (availableTable) {
+      setJoiningTable(availableTable); 
     }
   };
 
@@ -76,28 +81,57 @@ const Mesas = () => {
           <p className="text-sm uppercase tracking-[0.2em] text-primary font-semibold">Taverna</p>
           <h1 className="mt-2 font-display text-4xl font-bold text-foreground">Mesas de Jogo</h1>
         </div>
+        <div className="flex gap-3 w-full sm:w-auto">
+          {/* BOTÃO E MODAL DE ENTRAR NA MESA */}
+          <Dialog 
+            open={openJoin || !!joiningTable} 
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setOpenJoin(false);
+                setJoiningTable(null);
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              {/* O botão solto apenas muda o openJoin para true (targetTable ficará null) */}
+              <Button 
+                variant="outline" 
+                onClick={() => setOpenJoin(true)} 
+                className="flex-1 sm:flex-none border-primary/30 hover:bg-primary/10 text-primary"
+              >
+                <Key size={18} className="mr-2" /> Usar Código
+              </Button>
+            </DialogTrigger>
 
-        <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary shadow-glow hover:scale-105 transition-transform">
-              <Plus size={18} className="mr-2" /> Nova Mesa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="glass-card border-primary/30 sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl gradient-text">Forjar Nova Campanha</DialogTitle>
-            </DialogHeader>
-            <TableForm
-              mode="create"
-              sistemas={systems}
-              userId={user!.id}
-              onSuccess={(newTable) => {
-                setGmTables((prev) => [newTable, ...prev]);
-                setOpenCreate(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+            <DialogContent className="glass-card border-primary/30 sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl gradient-text">Entrar em uma Campanha</DialogTitle>
+              </DialogHeader>
+              
+              <JoinTableForm 
+                userId={user!.id} 
+                targetTable={joiningTable} // <-- Passamos a mesa (se existir) para o filtro mágico
+                onSuccess={() => {
+                  setOpenJoin(false);
+                  setJoiningTable(null);
+                  loadData(); // Recarrega para a mesa sair do Lobby e ir para as suas!
+                }} 
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* BOTÃO E MODAL DE FORJAR NOVA MESA (O que você já tinha feito) */}
+          <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+            <DialogTrigger asChild>
+              <Button className="flex-1 sm:flex-none bg-gradient-primary shadow-glow hover:scale-105 transition-transform">
+                <Plus size={18} className="mr-2" /> Nova Mesa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="glass-card border-primary/30 sm:max-w-md">
+              {/* ... conteudo da TableForm ... */}
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
 
       <Dialog open={!!editingTable} onOpenChange={(isOpen) => !isOpen && setEditingTable(null)}>
@@ -112,11 +146,6 @@ const Mesas = () => {
               sistemas={systems}
               userId={user!.id}
               onSuccess={(updatedFields) => {
-                /** * CORREÇÃO AQUI: 
-                 * Em vez de substituir o objeto todo, fazemos um merge ({...table, ...updatedFields}).
-                 * Isso mantém o objeto 'system' e 'players' que já estavam no estado local,
-                 * atualizando apenas o nome e descrição que vieram da API.
-                 */
                 setGmTables((prev) => 
                   prev.map((t) => (t.id === updatedFields.id ? { ...t, ...updatedFields } : t))
                 );

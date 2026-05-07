@@ -55,7 +55,7 @@ export class EmailSender {
                       Que os seus dados rolem sempre 20 natural.
                     </p>
                     <p style="color: #4B4B63; font-family: 'Inter', sans-serif; font-size: 10px; margin-top: 10px;">
-                      © ${new Date().getFullYear()} MastersBook RPG. Todos os direitos reservados.
+                      © ${new Date().getFullYear()} Master'sBook RPG. Todos os direitos reservados.
                     </p>
                   </td>
                 </tr>
@@ -125,7 +125,7 @@ export class EmailSender {
     const content = `
       <h2 style="color: ${this.colors.primary}; font-family: 'Cinzel', serif; margin-top: 0; font-size: 22px;">Boas notícias, ${senderName}!</h2>
       
-      <p style="color: ${this.colors.textLight};">O jogador <strong style="color: ${this.colors.primary};">${accepterName}</strong> aceitou o seu pacto de amizade no MastersBook.</p>
+      <p style="color: ${this.colors.textLight};">O jogador <strong style="color: ${this.colors.primary};">${accepterName}</strong> aceitou o seu pacto de amizade no Master'sBook.</p>
       <p style="color: ${this.colors.textMuted};">A vossa aliança está formada. A partir de agora, vocês podem convidar um ao outro para as mesas e compartilhar fichas lendárias.</p>
       
       <p style="margin-top: 30px;">Preparem as espadas e os feitiços!</p>
@@ -141,7 +141,7 @@ export class EmailSender {
       
       <p style="color: ${this.colors.textMuted};">As portas da taverna estão oficialmente abertas para você.</p>
       
-      <p>A sua conta no <strong>MastersBook</strong> foi forjada com sucesso. O seu grimório pessoal já está pronto para receber as suas criações.</p>
+      <p>A sua conta no <strong>Master'sBook</strong> foi forjada com sucesso. O seu grimório pessoal já está pronto para receber as suas criações.</p>
       
       <div style="margin: 30px 0;">
         <p style="margin-bottom: 10px; color: ${this.colors.primary}; font-weight: bold;">O que você pode fazer agora?</p>
@@ -156,6 +156,6 @@ export class EmailSender {
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail(userEmail, '✨ Bem-vindo ao MastersBook! Que a sua jornada comece.', html);
+    await this.sendEmail(userEmail, "✨ Bem-vindo ao Master'sBook! Que a sua jornada comece.", html);
   }
 }
