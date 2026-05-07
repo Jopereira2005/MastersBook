@@ -14,7 +14,7 @@ export const createCharacterSchema = z.object({
     }),
     
     bio: z.string().optional(),
-    avatarUrl: z.url("URL do avatar inválida.").optional(),
+    avatarUrl: z.string().optional(),
     
     // IDs das relações
     userId: z.uuid({ message: "ID do usuário inválido." }),
@@ -41,7 +41,7 @@ export const updateCharacterSchema = z.object({
     }).optional(),
     
     bio: z.string().optional(),
-    avatarUrl: z.url("URL do avatar inválida.").optional(),
+    avatarUrl: z.string().optional(),
     
     // 🚫 ATENÇÃO: systemId e userId de fora propositadamente!
   })
