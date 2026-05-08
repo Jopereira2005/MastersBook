@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
@@ -8,16 +8,7 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   loading?: boolean;
-}
-
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  description: string;
-  loading?: boolean;
-  children?: React.ReactNode; // <-- ADICIONADO
+  children?: React.ReactNode;
 }
 
 export function ConfirmDialog({ isOpen, onClose, onConfirm, title, description, loading, children }: ConfirmDialogProps) {

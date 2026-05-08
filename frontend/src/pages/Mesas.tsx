@@ -82,7 +82,6 @@ const Mesas = () => {
           <h1 className="mt-2 font-display text-4xl font-bold text-foreground">Mesas de Jogo</h1>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
-          {/* BOTÃO E MODAL DE ENTRAR NA MESA */}
           <Dialog 
             open={openJoin || !!joiningTable} 
             onOpenChange={(isOpen) => {
@@ -93,7 +92,6 @@ const Mesas = () => {
             }}
           >
             <DialogTrigger asChild>
-              {/* O botão solto apenas muda o openJoin para true (targetTable ficará null) */}
               <Button 
                 variant="outline" 
                 onClick={() => setOpenJoin(true)} 
@@ -110,17 +108,16 @@ const Mesas = () => {
               
               <JoinTableForm 
                 userId={user!.id} 
-                targetTable={joiningTable} // <-- Passamos a mesa (se existir) para o filtro mágico
+                targetTable={joiningTable}
                 onSuccess={() => {
                   setOpenJoin(false);
                   setJoiningTable(null);
-                  loadData(); // Recarrega para a mesa sair do Lobby e ir para as suas!
+                  loadData();
                 }} 
               />
             </DialogContent>
           </Dialog>
 
-          {/* BOTÃO E MODAL DE FORJAR NOVA MESA (O que você já tinha feito) */}
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild>
               <Button className="flex-1 sm:flex-none bg-gradient-primary shadow-glow hover:scale-105 transition-transform">
@@ -128,7 +125,20 @@ const Mesas = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="glass-card border-primary/30 sm:max-w-md">
-              {/* ... conteudo da TableForm ... */}
+              {/* ADICIONADO ABAIXO: */}
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl gradient-text">Forjar Nova Campanha</DialogTitle>
+              </DialogHeader>
+
+              <TableForm
+                mode="create"
+                sistemas={systems}
+                userId={user!.id}
+                onSuccess={(newTable) => {
+                  setGmTables((prev) => [newTable, ...prev]);
+                  setOpenCreate(false);
+                }}
+              />
             </DialogContent>
           </Dialog>
         </div>
