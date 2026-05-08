@@ -10,9 +10,9 @@ export interface CreateTableDTO {
 }
 
 export const tableService = {
-  async create(data: Partial<ITable>): Promise<ITable> {
+  async create(data: Partial<ITable>): Promise<{ table: ITable }> {
     try {
-      const response = await api.post<ITable>('/tables/create', data);
+      const response = await api.post<{ table: ITable }>('/tables/create', data);
       return response.data;
     } catch (error: any) {
       // Tratamento para capturar erros de validação do Zod no backend

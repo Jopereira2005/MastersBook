@@ -61,8 +61,8 @@ export function TableForm({ mode, initialData, sistemas, userId, onSuccess, onDe
         
         // No Create, nós precisamos do result, pois o backend gera o ID novo
         const result = await tableService.create({ ...form, gmId: userId });
-        toast.success(`A campanha "${result.name}" foi forjada!`);
-        onSuccess(result);
+        toast.success(`A campanha "${result.table.name}" foi forjada!`);
+        onSuccess(result.table);
       }
 
     } catch (error: any) {
