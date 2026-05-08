@@ -59,7 +59,7 @@ export const AppSidebar = () => {
       <div className="border-t border-sidebar-border p-3">
         <div className="mb-2 flex items-center gap-3 rounded-xl bg-sidebar-accent/50 px-3 py-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary text-sm font-semibold text-primary-foreground">
-            { user.avatarUrl && user.avatarUrl.length <= 2 ? (
+            { user?.avatarUrl && user?.avatarUrl.length <= 2 ? (
               <span className="text-base leading-none">{ user?.avatarUrl || 'U' }</span>
             ) : (
               <span className="text-xs">{user?.firstName.charAt(0).toUpperCase() + user?.lastName.charAt(0).toUpperCase() || 'Aventureiro'}</span>

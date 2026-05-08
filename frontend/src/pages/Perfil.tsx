@@ -32,10 +32,10 @@ const Perfil = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        username: user.username || "",
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        avatarUrl: user.avatarUrl || AVAILABLE_AVATARS[0],
+        username: user?.username || "",
+        firstName: user?.firstName || "",
+        lastName: user?.lastName || "",
+        avatarUrl: user?.avatarUrl || AVAILABLE_AVATARS[0],
       });
     }
   }, [user]);
@@ -58,10 +58,10 @@ const Perfil = () => {
     setIsEditing(false);
     if (user) {
       setFormData({
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatarUrl: user.avatarUrl || AVAILABLE_AVATARS[0],
+        username: user?.username,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        avatarUrl: user?.avatarUrl || AVAILABLE_AVATARS[0],
       });
     }
   };
