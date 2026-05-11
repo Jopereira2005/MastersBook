@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ConfirmDialog } from "@/components/confirm-dialog"; // <-- Importado aqui
 
 // Interface baseada no DTO que o teu backend retorna
 export interface IFriendItem {
@@ -19,8 +20,8 @@ const Amigos = () => {
   const { user } = useAuth();
   
   // Estados de Dados
-  const [amigos, setAmigos] = useState<IFriendItem[]>([]);
-  const [pendentes, setPendentes] = useState<IFriendItem[]>([]);
+  const [friends, setFriends] = useState<IFriendItem[]>([]);
+  const [pending, setPending] = useState<IFriendItem[]>([]);
   
   // Estados de UI
   const [isLoading, setIsLoading] = useState(true);
@@ -28,21 +29,24 @@ const Amigos = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
+  // Estado para o ConfirmDialog
+  const [friendToRemove, setFriendToRemove] = useState<string | null>(null);
+
   useEffect(() => {
     if (user?.id) {
-      carregarAmizades();
+      loadData();
     }
   }, [user?.id]);
 
-  const carregarAmizades = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
       const [listaAmigos, listaPendentes] = await Promise.all([
         friendshipService.getFriends(user!.id),
         friendshipService.getPending(user!.id)
       ]);
-      setAmigos(listaAmigos);
-      setPendentes(listaPendentes);
+      setFriends(listaAmigos);
+      setPending(listaPendentes);
     } catch (error: any) {
       toast.error(error.message || "Erro ao invocar a sua lista de contatos.");
     } finally {
@@ -50,9 +54,6 @@ const Amigos = () => {
     }
   };
 
-  /**
-   * Enviar pedido de amizade DIRETO pelo username
-   */
   const handleSendRequest = async () => {
     const target = searchQuery.trim();
     if (!target) return;
@@ -63,12 +64,10 @@ const Amigos = () => {
 
     setIsSearching(true);
     try {
-      // O Backend recebe o username no campo target/user2Id e processa a busca
       await friendshipService.sendRequest(user!.id, target);
-      
       toast.success(`Coruja enviada para @${target}!`);
       setSearchQuery(""); 
-      carregarAmizades(); 
+      loadData();
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar o convite para a party.");
     } finally {
@@ -81,7 +80,7 @@ const Amigos = () => {
     try {
       await friendshipService.acceptRequest(friendshipId);
       toast.success("Novo aliado adicionado à party!");
-      carregarAmizades(); 
+      loadData();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -94,7 +93,7 @@ const Amigos = () => {
     try {
       await friendshipService.declineRequest(friendshipId);
       toast.info("Solicitação de amizade recusada.");
-      setPendentes(prev => prev.filter(p => p.friendshipId !== friendshipId));
+      loadData();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -102,18 +101,19 @@ const Amigos = () => {
     }
   };
 
-  const handleRemove = async (friendshipId: string) => {
-    if (!confirm("Deseja realmente remover este aliado da sua party?")) return;
+  const executeRemove = async () => {
+    if (!friendToRemove) return;
     
-    setIsActionLoading(friendshipId);
+    setIsActionLoading(friendToRemove);
     try {
-      await friendshipService.removeFriend(friendshipId);
+      await friendshipService.removeFriend(friendToRemove);
       toast.success("Aliado removido.");
-      setAmigos(prev => prev.filter(a => a.friendshipId !== friendshipId));
+      loadData(); // Atualiza a lista sincronizada com o backend
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsActionLoading(null);
+      setFriendToRemove(null); // Fecha o modal
     }
   };
 
@@ -157,20 +157,20 @@ const Amigos = () => {
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
           
-          {/* COLUNA ESQUERDA: LISTA DE ALIADOS (ESTILO ADVENTURER LICENSE) */}
+          {/* COLUNA ESQUERDA: LISTA DE ALIADOS */}
           <section className="space-y-6">
             <h2 className="text-xl font-display font-semibold flex items-center gap-2 text-foreground/90 tracking-wide">
               <Users className="text-primary" size={20}/> Aliados da Party
             </h2>
 
-            {amigos.length === 0 ? (
+            {friends.length === 0 ? (
               <div className="text-center p-16 glass-card border-dashed border-primary/10">
                 <Ghost className="mx-auto mb-4 text-primary/20" size={48} />
                 <p className="text-muted-foreground italic text-sm">Sua party ainda está vazia. Invoque novos aliados!</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {amigos.map((friend) => (
+                {friends.map((friend) => (
                   <div 
                     key={friend.friendshipId} 
                     className="glow-card flex items-center gap-5 p-5 bg-card/30 backdrop-blur-sm border border-primary/10 rounded-2xl transition-all hover:border-primary/40 hover:bg-card/50 group"
@@ -201,7 +201,7 @@ const Amigos = () => {
                         variant="ghost" 
                         size="icon" 
                         disabled={isActionLoading === friend.friendshipId}
-                        onClick={() => handleRemove(friend.friendshipId)}
+                        onClick={() => setFriendToRemove(friend.friendshipId)} // Abre o Modal
                         className="h-10 w-10 text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 rounded-full transition-colors border border-border/40 hover:border-red-900"
                         title="Remover aliado"
                       >
@@ -225,12 +225,12 @@ const Amigos = () => {
             </h2>
 
             <div className="space-y-3">
-              {pendentes.length === 0 ? (
+              {pending.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic bg-muted/5 p-4 rounded-lg border border-border/50 text-center">
                   Sem corujas de convite no momento.
                 </p>
               ) : (
-                pendentes.map((req) => (
+                pending.map((req) => (
                   <div key={req.friendshipId} className="glass-card p-4 space-y-4 border-emerald-500/10">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border border-primary/20">
@@ -269,6 +269,16 @@ const Amigos = () => {
 
         </div>
       )}
+
+      {/* COMPONENTE DE CONFIRMAÇÃO */}
+      <ConfirmDialog
+        isOpen={!!friendToRemove}
+        onClose={() => setFriendToRemove(null)}
+        onConfirm={executeRemove}
+        loading={isActionLoading !== null}
+        title="Romper Aliança?"
+        description="Você deseja realmente remover este aliado da sua party?"
+      />
     </div>
   );
 };
