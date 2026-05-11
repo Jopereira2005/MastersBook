@@ -1,7 +1,7 @@
 import { api } from "./api";
 import { IUser } from "@/interfaces/user";
 
-const CURRENT_KEY = "@MastersBook:user";
+const CURRENT_KEY = "@MastersBook:userv2";
 
 export const userService = {
   // Retorna o utilizador logado atualmente (LocalStorage)
@@ -97,9 +97,9 @@ export const userService = {
     localStorage.removeItem(CURRENT_KEY);
   },
 
-  async deleteAccount(password: string): Promise<void> {
+  async deleteAccount(userId: string, password: string): Promise<void> {
     try {
-      await api.delete("/users/delete", { data: { password } });
+      await api.delete(`/users/delete/${userId}`, { data: { password } });
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 

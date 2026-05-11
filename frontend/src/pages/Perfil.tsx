@@ -79,7 +79,7 @@ const Perfil = () => {
 
     setIsDeleting(true);
     try {
-      await userService.deleteAccount(passwordConfirmation);
+      await userService.deleteAccount(user?.id, passwordConfirmation);
       toast.success("Seu rastro foi apagado do MastersBook.");
       logout(); // Desloga e limpa a sessão após deletar
     } catch (error: any) {
