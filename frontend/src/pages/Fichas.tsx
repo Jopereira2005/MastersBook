@@ -1,235 +1,183 @@
-import { useState } from "react";
-import { Plus, Heart, Shield, Swords, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Loader2, Sparkles, Search, Heart, Droplet } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { characterService } from "@/services/character.service";
+import { systemService } from "@/services/system.service";
+import { ICharacter } from "@/interfaces/character";
+import { ISystem } from "@/interfaces/system";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CharacterForm } from "@/components/character-form";
 import { toast } from "sonner";
 
-interface Ficha {
-  id: string;
-  nome: string;
-  classe: string;
-  raca: string;
-  nivel: number;
-  hp: number;
-  ca: number;
-  ataque: number;
+export default function Fichas() {
+  const { user } = useAuth();
+  const [characters, setCharacters] = useState<ICharacter[]>([]);
+  const [systems, setSystems] = useState<ISystem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  forca: number;
-  destreza: number;
-  constituicao: number;
-  sabedoria: number;
-  inteligencia: number;
+  // Estados de controlo do Modal
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingChar, setEditingChar] = useState<ICharacter | null>(null);
 
-  cor: string;
-}
+  useEffect(() => {
+    if (user?.id) loadData();
+  }, [user?.id]);
 
-const initial: Ficha[] = [
-  {
-    id: "1",
-    nome: "Aelin Ashryver",
-    classe: "Ranger",
-    raca: "Meio-elfa",
-    nivel: 8,
-    hp: 72,
-    ca: 16,
-    ataque: 9,
-    forca: 14,
-    destreza: 18,
-    constituicao: 12,
-    sabedoria: 13,
-    inteligencia: 10,
-    cor: "from-purple-500 to-fuchsia-500",
-  },
-];
-
-const classes = ["Guerreiro", "Mago", "Ladino", "Clérigo", "Paladino", "Ranger"];
-const racas = ["Humano", "Elfo", "Anão", "Orc", "Tiefling", "Meio-elfo"];
-
-const Fichas = () => {
-  const [fichas, setFichas] = useState<Ficha[]>(initial);
-  const [open, setOpen] = useState(false);
-
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedFicha, setSelectedFicha] = useState<Ficha | null>(null);
-
-  const [form, setForm] = useState({
-    nome: "",
-    classe: "",
-    raca: "",
-    nivel: 1,
-    forca: 0,
-    destreza: 0,
-    constituicao: 0,
-    sabedoria: 0,
-    inteligencia: 0,
-  });
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setFichas([
-      ...fichas,
-      {
-        id: crypto.randomUUID(),
-        ...form,
-        hp: 10 + form.nivel * 6,
-        ca: 12 + Math.floor(form.nivel / 2),
-        ataque: 2 + Math.floor(form.nivel / 2),
-        cor: "from-purple-500 to-fuchsia-500",
-      },
-    ]);
-
-    setForm({
-      nome: "",
-      classe: "",
-      raca: "",
-      nivel: 1,
-      forca: 0,
-      destreza: 0,
-      constituicao: 0,
-      sabedoria: 0,
-      inteligencia: 0,
-    });
-
-    setOpen(false);
-    toast.success("Ficha criada com sucesso!");
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // Procura em simultâneo os heróis e os sistemas disponíveis
+      const [charList, systemList] = await Promise.all([
+        characterService.getByUser(user!.id),
+        systemService.getAll()
+      ]);
+      setCharacters(charList);
+      setSystems(systemList);
+    } catch (error: any) {
+      toast.error("Erro ao ler os teus pergaminhos antigos.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const handleOpenEdit = (char: ICharacter) => {
+    setEditingChar(char);
+    setIsFormOpen(true);
+  };
+
+  const handleSuccess = () => {
+    setIsFormOpen(false);
+    setEditingChar(null);
+    loadData(); // Recarrega a lista para refletir as mudanças (incluindo duplicações ou deletes)
+  };
+
+  // Filtro de busca inteligente (Primeiro Nome, Sobrenome ou Classe)
+  const filteredChars = characters.filter(c => 
+    c.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.race?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
+      
+      {/* HEADER DA PÁGINA */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-primary">Personagens</p>
-          <h1 className="mt-2 font-display text-4xl font-bold">Minhas Fichas</h1>
-          <p className="mt-1 text-muted-foreground">Suas lendas vivas em cada campanha.</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-primary font-semibold">Grimório</p>
+          <h1 className="mt-2 font-display text-4xl font-bold text-white">Seus Heróis</h1>
         </div>
-
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary shadow-glow">
-              <Plus size={16} className="mr-2" /> Nova Ficha
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="glass-card border-primary/30">
-            <DialogHeader>
-              <DialogTitle className="font-display gradient-text">Criar Personagem</DialogTitle>
-            </DialogHeader>
-
-            <form onSubmit={handleCreate} className="space-y-4">
-
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Classe</Label>
-                  <Select onValueChange={(value) => setForm({ ...form, classe: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Escolha a classe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Raça</Label>
-                  <Select onValueChange={(value) => setForm({ ...form, raca: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Escolha a raça" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {racas.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label>Nível</Label>
-                <Input type="number" min={1} max={20} value={form.nivel}
-                  onChange={(e) => setForm({ ...form, nivel: +e.target.value })} />
-              </div>
-
-              {/* ATRIBUTOS */}
-              <div className="grid grid-cols-2 gap-4">
-                <Input placeholder="Força" type="number" onChange={(e) => setForm({ ...form, forca: +e.target.value })} />
-                <Input placeholder="Destreza" type="number" onChange={(e) => setForm({ ...form, destreza: +e.target.value })} />
-                <Input placeholder="Constituição" type="number" onChange={(e) => setForm({ ...form, constituicao: +e.target.value })} />
-                <Input placeholder="Sabedoria" type="number" onChange={(e) => setForm({ ...form, sabedoria: +e.target.value })} />
-                <Input placeholder="Inteligência" type="number" onChange={(e) => setForm({ ...form, inteligencia: +e.target.value })} />
-              </div>
-
-              <DialogFooter>
-                <Button type="submit" className="bg-gradient-primary">Criar Ficha</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          onClick={() => { setEditingChar(null); setIsFormOpen(true); }} 
+          className="bg-gradient-primary shadow-glow hover:scale-105 transition-transform text-white font-bold"
+        >
+          <Plus size={18} className="mr-2" /> Novo Personagem
+        </Button>
       </header>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {fichas.map((f) => (
-          <article key={f.id} className="glow-card p-5">
-            <h3 className="font-display text-xl">{f.nome}</h3>
-            <p className="text-sm text-muted-foreground">{f.classe} • Nv. {f.nivel}</p>
-
-            <Button
-              className="mt-4 w-full"
-              onClick={() => {
-                setSelectedFicha(f);
-                setOpenModal(true);
-              }}
-            >
-              Ver Ficha Completa
-            </Button>
-          </article>
-        ))}
+      {/* BARRA DE PESQUISA */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+        <Input 
+          placeholder="Buscar por nome ou classe..." 
+          className="pl-10 bg-card/30 border-primary/10 focus:border-primary/40 focus-visible:ring-primary"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      {/* MODAL */}
-      <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent>
+      {/* ÁREA DE CONTEÚDO / LISTAGEM */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 opacity-70">
+          <Loader2 className="animate-spin text-primary mb-4" size={40} />
+          <p className="font-display tracking-widest uppercase text-xs text-muted-foreground">Invocando aliados...</p>
+        </div>
+      ) : characters.length === 0 ? (
+        <div className="text-center p-20 glass-card border-dashed border-primary/20">
+          <Sparkles className="mx-auto text-primary/40 mb-4" size={48} />
+          <p className="text-muted-foreground">O teu grimório está vazio. Não tens heróis neste mundo.</p>
+          <Button variant="link" onClick={() => setIsFormOpen(true)} className="text-primary mt-2 p-0">
+            Que tal forjares o primeiro?
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredChars.map((char) => (
+            <button 
+              key={char.id} 
+              onClick={() => handleOpenEdit(char)}
+              className="glow-card p-6 flex flex-col items-center text-center space-y-4 group transition-all w-full relative"
+            >
+              {/* Avatar (Emoji) */}
+              <div className="h-16 w-16 flex items-center justify-center rounded-full bg-zinc-900 border border-primary/20 text-3xl group-hover:scale-110 transition-transform shadow-glow">
+                
+                {char.avatarUrl && char.avatarUrl.length <= 2 ? (
+                  <span>{char.avatarUrl}</span>
+                ) : (
+                  "👤"
+                )}
+              </div>
+
+              <div className="w-full">
+                {/* Nome Completo */}
+                <h3 className="font-display text-xl font-bold text-white group-hover:text-primary transition-colors truncate">
+                  {char.firstName} {char.lastName}
+                </h3>
+                
+                {/* Classe e Nível */}
+                <p className="text-[10px] uppercase tracking-widest text-primary font-bold truncate">
+                  {char.class || "Sem Classe"} • Nvl {char.level || 1}
+                </p>
+                
+                {/* Resumo Rápido de Status (HP e Mana) */}
+                {char.attributes && (
+                  <div className="mt-4 flex items-center justify-center gap-3">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono bg-red-500/10 text-red-400 px-2.5 py-1 rounded-full border border-red-500/20">
+                      <Heart size={10} className="fill-red-400/20"/> {char.attributes.hp}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20">
+                      <Droplet size={10} className="fill-blue-400/20"/> {char.attributes.mana}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* MODAL DE CRIAÇÃO / EDIÇÃO */}
+      <Dialog 
+        open={isFormOpen} 
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) setEditingChar(null);
+        }}
+      >
+        <DialogContent className="glass-card border-primary/30 sm:max-w-lg overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Ficha Completa</DialogTitle>
+            <DialogTitle className="font-display text-2xl gradient-text">
+              {editingChar ? "Editar Herói" : "Forjar Novo Herói"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Preenche os detalhes do teu herói, como nome, raça, classe e atributos para salvar no teu grimório.
+            </DialogDescription>
           </DialogHeader>
-
-          {selectedFicha && (
-            <div className="space-y-2">
-              <p><strong>Nome:</strong> {selectedFicha.nome}</p>
-              <p><strong>Classe:</strong> {selectedFicha.classe}</p>
-              <p><strong>Raça:</strong> {selectedFicha.raca}</p>
-              <p><strong>Nível:</strong> {selectedFicha.nivel}</p>
-
-              <hr />
-
-              <p>HP: {selectedFicha.hp}</p>
-              <p>Força: {selectedFicha.forca}</p>
-              <p>Destreza: {selectedFicha.destreza}</p>
-              <p>Constituição: {selectedFicha.constituicao}</p>
-              <p>Sabedoria: {selectedFicha.sabedoria}</p>
-              <p>Inteligência: {selectedFicha.inteligencia}</p>
-            </div>
-          )}
+          
+          <CharacterForm 
+            mode={editingChar ? "edit" : "create"}
+            initialData={editingChar}
+            systems={systems}
+            userId={user!.id}
+            onSuccess={handleSuccess}
+          />
         </DialogContent>
       </Dialog>
+
     </div>
   );
-};
-
-export default Fichas;
+}

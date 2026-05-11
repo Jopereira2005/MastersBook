@@ -1,5 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -11,24 +20,51 @@ interface ConfirmDialogProps {
   children?: React.ReactNode;
 }
 
-export function ConfirmDialog({ isOpen, onClose, onConfirm, title, description, loading, children }: ConfirmDialogProps) {
-  if (!isOpen) return null;
+export function ConfirmDialog({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  description, 
+  loading, 
+  children 
+}: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-zinc-950 border border-red-500/20 rounded-2xl p-6 w-full max-w-md space-y-6 shadow-glow">
-        <h2 className="text-xl font-display font-bold text-red-500 uppercase">{title}</h2>
-        <p className="text-muted-foreground text-sm">{description}</p>
-        
-        {/* Renderiza o campo de senha se ele for passado */}
+    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent className="glass-card border-destructive/20 shadow-glow max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-xl font-display font-bold text-red-500 uppercase tracking-wide">
+            {title}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-muted-foreground text-sm">
+            {description}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        {/* Espaço para conteúdo extra (como o campo de senha no Perfil) */}
         {children && <div className="py-2">{children}</div>}
 
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
-            {loading ? <Loader2 className="animate-spin" size={18} /> : "Confirmar Exclusão"}
-          </Button>
-        </div>
-      </div>
-    </div>
+        <AlertDialogFooter className="mt-4">
+          <AlertDialogCancel 
+            disabled={loading} 
+            onClick={onClose}
+            className="bg-transparent border-white/10 hover:bg-white/5 text-white"
+          >
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault(); // Evita fechar antes da lógica terminar se necessário
+              onConfirm();
+            }}
+            disabled={loading}
+            className="bg-destructive text-white hover:bg-destructive/90 font-bold"
+          >
+            {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+            Confirmar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

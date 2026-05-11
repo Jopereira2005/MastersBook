@@ -54,10 +54,9 @@ export const characterService = {
     }
   },
 
-
   async update(characterId: string, data: Partial<ICharacter>): Promise<ICharacter> {
     try {
-      const response = await api.patch(`/characters/$update/${characterId}`, data);
+      const response = await api.patch(`/characters/update/${characterId}`, data);
       return response.data;
     } catch (error: any) {
       throw new Error(
