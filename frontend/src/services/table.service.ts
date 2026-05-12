@@ -1,4 +1,3 @@
-import { table } from "console";
 import { api } from "./api";
 import { ITable } from "@/interfaces/table";
 
@@ -79,7 +78,6 @@ export const tableService = {
   async regenerateInviteCode(id: string): Promise<{ newInviteCode: string }> {
     try {
       const response = await api.patch(`/tables/regenerate-code/${id}`);
-      console.log("Código de convite regenerado:", response.data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Erro ao gerar novo código.");
@@ -137,9 +135,8 @@ export const tableService = {
 
   async patchPlayerStatus(tableId: string, playerId: string, status: any) {
     try {
-      console.log("Enviando status para o backend:", { tableId, playerId, status });
       const response = await api.patch(`/tables/${tableId}/players/${playerId}/status`, status);
-      return response.data; // Retorna o TablePlayer atualizado
+      return response.data;
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 
@@ -152,7 +149,6 @@ export const tableService = {
     try {
       // Enviamos as notes dentro de um objeto
       const response = await api.patch(`/tables/${tableId}/players/${playerId}/notes`, { privateNotes });
-      console.log("Erro ao salvar as anotações:", response);
       return response.data; // Retorna o TablePlayer atualizado
     } catch (error: any) {
       console.log("Erro ao salvar as anotações:", error);
