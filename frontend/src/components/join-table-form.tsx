@@ -15,7 +15,7 @@ import { ITable } from "@/interfaces/table";
 interface JoinTableFormProps {
   userId: string;
   targetTable?: ITable | null;
-  onSuccess: () => void;
+  onSuccess: (tableId: string) => void;
 }
 
 export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormProps) {
@@ -57,11 +57,15 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
 
     setLoading(true);
     try {
-      await tableService.joinTable(inviteCode.trim(), userId, characterId);
+      // Chamamos o serviço e capturamos a resposta (que deve conter o tableId ou a própria mesa)
+      const response = await tableService.joinTable(inviteCode.trim(), userId, characterId);
+      const tableId = response.tableId || targetTable?.id;
+
       toast.success("As portas da taverna abriram-se! Entraste na mesa.");
-      onSuccess(); 
+      onSuccess(tableId); 
+      
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Código inválido ou herói indisponível.");
     } finally {
       setLoading(false);
     }
@@ -73,16 +77,16 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
       {targetTable && (
         <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
           <Dices className="text-primary shrink-0" size={24} />
-          <div>
-            <p className="text-xs text-primary font-bold uppercase tracking-wider">A unir-se à campanha</p>
-            <p className="text-sm font-semibold text-foreground truncate max-w-[250px]">{targetTable.name}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] text-primary font-bold uppercase tracking-wider">A unir-se à campanha</p>
+            <p className="text-sm font-semibold text-foreground truncate">{targetTable.name}</p>
           </div>
         </div>
       )}
 
       {/* Código de Convite */}
       <div className="space-y-2">
-        <Label htmlFor="inviteCode" className="flex items-center gap-2">
+        <Label htmlFor="inviteCode" className="flex items-center gap-2 text-zinc-300">
           <Key size={16} className="text-primary" /> Código de Convite
         </Label>
         <Input 
@@ -91,7 +95,7 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
           disabled={loading} 
           onChange={(e) => setInviteCode(e.target.value.toUpperCase())} 
           placeholder="Ex: XYZ123"
-          className="bg-background/50 border-primary/20 font-mono text-lg tracking-widest uppercase placeholder:text-sm placeholder:tracking-normal"
+          className="bg-background/50 border-primary/20 font-mono text-lg tracking-widest uppercase"
           required 
         />
         <p className="text-[10px] text-muted-foreground italic">Solicita o código secreto ao Mestre da campanha.</p>
@@ -99,7 +103,7 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
 
       {/* Seleção de Personagem*/}
       <div className="space-y-2">
-        <Label className="flex items-center gap-2">
+        <Label className="flex items-center gap-2 text-zinc-300">
           <Swords size={16} className="text-primary" /> Seleciona o teu Herói
         </Label>
         
@@ -112,34 +116,30 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
             <ShieldAlert className="text-red-400" size={24} />
             <p className="text-xs text-red-400 font-medium">
               {targetTable 
-                ? `Não tens heróis criados para o sistema ${targetTable.system?.name || "desta mesa"}!` 
+                ? `Não tens heróis para o sistema ${targetTable.system?.name || "desta mesa"}!` 
                 : "Não possuis fichas criadas!"}
             </p>
-            <p className="text-[10px] text-muted-foreground">Vai até à aba de Fichas e cria um personagem adequado antes de entrares.</p>
+            <p className="text-[10px] text-muted-foreground italic">Cria um herói adequado antes de entrares.</p>
           </div>
         ) : (
           <Select value={characterId} onValueChange={setCharacterId} disabled={loading}>
             <SelectTrigger className="bg-background/50 border-primary/20 h-14">
-              <SelectValue placeholder="Escolhe quem vai enfrentar esta jornada..." />
+              <SelectValue placeholder="Escolhe o teu herói..." />
             </SelectTrigger>
             
-            <SelectContent>
+            <SelectContent className="glass-card border-primary/20">
               {characters.map((char) => (
-                <SelectItem key={char.id} value={char.id} className="py-2">
-                  <div className="flex items-center gap-3 max-w-[280px] sm:max-w-[320px]">
+                <SelectItem key={char.id} value={char.id} className="py-3">
+                  <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 border border-primary/20 shrink-0">
                       <AvatarFallback className="bg-zinc-800 text-primary font-bold">
-                        {char.avatarUrl && char.avatarUrl.length < 2 ? (
-                          <span className="text-base leading-none">{char.avatarUrl}</span>
-                        ) : (
-                          <span className="text-xs">{char.firstName.charAt(0).toUpperCase() + char.lastName.charAt(0).toUpperCase()}</span>
-                        )}
+                        {char.avatarUrl && char.avatarUrl.length <= 5 ? char.avatarUrl : char.firstName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-semibold text-sm truncate">{char.firstName} {char.lastName}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">
-                        {char.class || "Sem Classe"} • Nvl {char.level || 1}
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold text-sm">{char.firstName} {char.lastName}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase truncate max-w-[180px]">
+                        {char.class || "Sem Classe"} • Nvl {char.level}
                       </span>
                     </div>
                   </div>
@@ -153,9 +153,9 @@ export function JoinTableForm({ userId, targetTable, onSuccess }: JoinTableFormP
       <Button 
         type="submit" 
         disabled={loading || characters.length === 0 || !inviteCode} 
-        className="w-full bg-gradient-primary shadow-glow text-primary-foreground font-bold tracking-wide"
+        className="w-full bg-gradient-primary shadow-glow text-white font-bold h-12"
       >
-        {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : "Unir-se à Campanha"}
+        {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : "Entrar na Taverna"}
       </Button>
     </form>
   );

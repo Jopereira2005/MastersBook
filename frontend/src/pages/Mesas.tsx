@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, Users, Crown, Shield, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"; // <-- DialogDescription adicionado
 import { toast } from "sonner";
 
 import { JoinTableForm } from "@/components/join-table-form";
@@ -15,6 +16,7 @@ import { ISystem } from "@/interfaces/system";
 
 const Mesas = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [gmTables, setGmTables] = useState<ITable[]>([]);
   const [playerTables, setPlayerTables] = useState<ITable[]>([]);
@@ -53,19 +55,22 @@ const Mesas = () => {
     }
   };
 
+  // NOVA LÓGICA DE AÇÃO: Direciona para o jogo ou para o modal de código
   const handleAction = (tableId: string) => {
-    const tableToEdit = gmTables.find((t) => t.id === tableId);
-    const tableToPlay = playerTables.find((t) => t.id === tableId);
-    const availableTable = availableTables.find((t) => t.id === tableId); // <-- NOVO!
+    const isAvailable = availableTables.some((t) => t.id === tableId);
 
-    if (tableToEdit) {
-      setEditingTable(tableToEdit);
-    } else if (tableToPlay) {
+    if (isAvailable) {
+      const table = availableTables.find((t) => t.id === tableId);
+      setJoiningTable(table || null);
+    } else {
       toast.info("Abrindo sessão de jogo...");
-      // navigate(`/game/${tableId}`);
-    } else if (availableTable) {
-      setJoiningTable(availableTable); 
+      navigate(`/mesa/${tableId}`); // <-- TELETRANSPORTE PARA O VTT
     }
+  };
+
+  // LÓGICA DE EDIÇÃO: Exclusiva do Mestre
+  const handleEditClick = (table: ITable) => {
+    setEditingTable(table);
   };
 
   const handleDeleteTable = (tableId: string) => {
@@ -82,6 +87,8 @@ const Mesas = () => {
           <h1 className="mt-2 font-display text-4xl font-bold text-foreground">Mesas de Jogo</h1>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
+          
+          {/* MODAL ENTRAR NA MESA */}
           <Dialog 
             open={openJoin || !!joiningTable} 
             onOpenChange={(isOpen) => {
@@ -104,20 +111,23 @@ const Mesas = () => {
             <DialogContent className="glass-card border-primary/30 sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl gradient-text">Entrar em uma Campanha</DialogTitle>
+                <DialogDescription className="sr-only">Digite o código para entrar em uma mesa</DialogDescription>
               </DialogHeader>
               
               <JoinTableForm 
                 userId={user!.id} 
                 targetTable={joiningTable}
-                onSuccess={() => {
+                onSuccess={(tableId) => {
                   setOpenJoin(false);
                   setJoiningTable(null);
-                  loadData();
+                  toast.info("Invocando os portões da sessão...");
+                  navigate(`/mesa/${tableId}`);
                 }} 
               />
             </DialogContent>
           </Dialog>
 
+          {/* MODAL CRIAR MESA */}
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild>
               <Button className="flex-1 sm:flex-none bg-gradient-primary shadow-glow hover:scale-105 transition-transform">
@@ -125,9 +135,9 @@ const Mesas = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="glass-card border-primary/30 sm:max-w-md">
-              {/* ADICIONADO ABAIXO: */}
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl gradient-text">Forjar Nova Campanha</DialogTitle>
+                <DialogDescription className="sr-only">Formulário de criação de mesa</DialogDescription>
               </DialogHeader>
 
               <TableForm
@@ -144,10 +154,12 @@ const Mesas = () => {
         </div>
       </header>
 
+      {/* MODAL EDITAR MESA */}
       <Dialog open={!!editingTable} onOpenChange={(isOpen) => !isOpen && setEditingTable(null)}>
         <DialogContent className="glass-card border-primary/30 sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl gradient-text">Configurações da Mesa</DialogTitle>
+            <DialogDescription className="sr-only">Ajustes da campanha pelo mestre</DialogDescription>
           </DialogHeader>
           {editingTable && (
             <TableForm
@@ -174,6 +186,7 @@ const Mesas = () => {
         </div>
       ) : (
         <div className="space-y-16">
+          
           <section>
             <h2 className="text-xl font-display font-semibold mb-6 flex items-center gap-2 text-foreground/90">
               <Crown className="text-primary" size={22} /> Campanhas que Mestra
@@ -190,6 +203,7 @@ const Mesas = () => {
                     table={table} 
                     isMestre={true} 
                     onActionClick={handleAction} 
+                    onEditClick={handleEditClick} // <-- Passando a função de edição
                   />
                 ))}
               </div>
@@ -232,7 +246,8 @@ const Mesas = () => {
                   <TableCard 
                     key={table.id} 
                     table={table} 
-                    isMestre={false} 
+                    isMestre={false}
+                    isAvailable={true} // <-- Ativando o layout de "Entrar" com chave
                     onActionClick={handleAction} 
                   />
                 ))}

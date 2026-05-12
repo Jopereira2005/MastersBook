@@ -1,14 +1,16 @@
-import { Crown, Users, ArrowRight } from "lucide-react";
+import { Crown, Users, ArrowRight, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ITable } from "@/interfaces/table";
 
 interface TableCardProps {
   table: ITable;
-  isMestre: boolean;
-  onActionClick?: (tableId: string) => void;
+  isMestre?: boolean;
+  isAvailable?: boolean; // Utilizado na aba de "Procurando Aventureiros"
+  onActionClick?: (tableId: string) => void; // Ação para entrar na mesa
+  onEditClick?: (table: ITable) => void;     // Ação para gerenciar a mesa (Apenas GM)
 }
 
-export function TableCard({ table, isMestre, onActionClick }: TableCardProps) {
+export function TableCard({ table, isMestre, isAvailable, onActionClick, onEditClick }: TableCardProps) {
   return (
     <article className="glow-card p-6 flex flex-col h-full bg-card/40 backdrop-blur-sm border border-border/50 rounded-xl">
       
@@ -49,24 +51,35 @@ export function TableCard({ table, isMestre, onActionClick }: TableCardProps) {
         </p>
       </div>
 
-      {/* BOTÃO DE AÇÃO */}
-      <Button 
-        variant={isMestre ? "outline" : "default"}
-        onClick={() => onActionClick && onActionClick(table.id)}
-        className={`mt-5 w-full shadow-glow hover:opacity-90 transition-all ${
-          isMestre 
-            ? 'border-primary text-primary hover:bg-primary/10' 
-            : 'bg-gradient-primary text-primary-foreground'
-        }`}
-      >
-        {isMestre ? (
-          "Gerenciar Campanha"
-        ) : (
+      {/* BOTÕES DE AÇÃO */}
+      <div className="mt-5 flex gap-2 w-full">
+        {/* Botão Principal de Entrar (Para GM, Jogadores e Lobby) */}
+        <Button 
+          variant={isAvailable ? "outline" : "default"}
+          onClick={() => onActionClick && onActionClick(table.id || "")}
+          className={`flex-1 shadow-glow hover:opacity-90 transition-all ${
+            isAvailable 
+              ? 'border-primary text-primary hover:bg-primary/10' 
+              : 'bg-gradient-primary text-primary-foreground'
+          }`}
+        >
           <span className="flex items-center gap-2">
-            Entrar na Mesa <ArrowRight size={16} />
+             Entrar na Mesa <ArrowRight size={16} />
           </span>
+        </Button>
+
+        {/* Botão Secundário de Configuração (APENAS PARA MESTRE) */}
+        {isMestre && (
+          <Button 
+            variant="outline"
+            onClick={() => onEditClick && onEditClick(table)}
+            className="border-primary text-primary hover:bg-primary/10 transition-all px-3 shrink-0"
+            title="Gerenciar Campanha"
+          >
+            <Settings size={18} />
+          </Button>
         )}
-      </Button>
+      </div>
     </article>
   );
 }
