@@ -37,9 +37,11 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, () => {
   console.log('====================================');
   console.log('📄 Documentação do Swagger disponível');
-  console.log(`Acesse: http://localhost:${PORT}/api-docs`);
+  console.log(`Acesse: http://localhost:${PORT}/api-docs`)
+  console.log(`Acesse: https://mastersbook-api.onrender.com/api`);
   console.log('------------------------------------');
   console.log(`🚀 API e WebSockets rodando na porta ${PORT}`);
   console.log(`Acesse: http://localhost:${PORT}/api`);
+  console.log(`Acesse: https://mastersbook-api.onrender.com/api`);
   console.log('====================================');
 });
