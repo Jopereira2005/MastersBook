@@ -28,10 +28,6 @@ export const tableService = {
     }
   },
 
-  /**
-   * Busca as mesas onde o usuário está participando como Jogador.
-   * Rota: /tables/player/{userId}
-   */
   async getByPlayer(userId: string): Promise<ITable[]> {
     try {
       const response = await api.get<ITable[]>(`/tables/player/${userId}`);
@@ -102,9 +98,10 @@ export const tableService = {
     }
   },
 
-  async joinTable(inviteCode: string, userId: string, characterId: string): Promise<void> {
+  async joinTable(inviteCode: string, userId: string, characterId: string): Promise<{ tableId: string }> {
     try {
-      await api.post("/tables/join", { inviteCode, userId, characterId });
+      const response = await api.post<{ tableId: string }>("/tables/join", { inviteCode, userId, characterId });
+      return response.data;
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 
@@ -112,5 +109,74 @@ export const tableService = {
         "Erro ao tentar entrar na campanha. Verifique o código e tente novamente."
       );
     }
-  }
+  },
+
+  async getFullTable(tableId: string) {
+    try {
+      const response = await api.get(`/tables/get/${tableId}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        "Erro ao carregar os pergaminhos da sessão."
+      );
+    }
+  },
+
+  async patchState(tableId: string, newState: any) {
+    try {
+      const response = await api.patch(`/tables/state/${tableId}`, newState);
+      return response.data; // Retorna o TableState atualizado
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        "Erro ao manipular a realidade do mundo."
+      );
+    }
+  },
+
+  async patchPlayerStatus(tableId: string, playerId: string, status: any) {
+    try {
+      console.log("Enviando status para o backend:", { tableId, playerId, status });
+      const response = await api.patch(`/tables/${tableId}/players/${playerId}/status`, status);
+      return response.data; // Retorna o TablePlayer atualizado
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        "Erro ao atualizar o status do herói."
+      );
+    }
+  },
+
+  async patchPlayerNotes(tableId: string, playerId: string, privateNotes: string) {
+    try {
+      // Enviamos as notes dentro de um objeto
+      const response = await api.patch(`/tables/${tableId}/players/${playerId}/notes`, { privateNotes });
+      console.log("Erro ao salvar as anotações:", response);
+      return response.data; // Retorna o TablePlayer atualizado
+    } catch (error: any) {
+      console.log("Erro ao salvar as anotações:", error);
+      throw new Error(
+        error.response?.data?.message || 
+        "Erro ao salvar suas anotações no grimório."
+      );
+    }
+  },
+
+  async removePlayer(tableId: string, playerId: string, requesterId: string) {
+    try {
+      // No Axios, o body do DELETE deve ser enviado dentro da chave 'data' no objeto de configuração
+      const response = await api.delete(`/tables/${tableId}/players/${playerId}`, {
+        data: { requesterId }
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.log("Erro ao remover jogador da mesa:", error);
+      throw new Error(
+        error.response?.data?.message || 
+        "Erro ao remover o aventureiro da mesa ou sair da sessão."
+      );
+    }
+  },
 };
