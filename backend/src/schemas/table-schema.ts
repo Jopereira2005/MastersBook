@@ -34,9 +34,7 @@ export const updateTableSchema = z.object({
   }),
 });
 
-// ==========================================
 // Entrar na Mesa (POST)
-// ==========================================
 export const joinTableSchema = z.object({
   body: z.object({
     inviteCode: z.string().length(6, "O código de convite deve ter exatamente 6 caracteres."),
@@ -45,9 +43,7 @@ export const joinTableSchema = z.object({
   }),
 });
 
-// ==========================================
 // Remover/Sair da Mesa (DELETE)
-// ==========================================
 export const removePlayerSchema = z.object({
   params: z.object({
     tableId: z.uuid({ message: "ID da mesa inválido." }),
@@ -58,16 +54,56 @@ export const removePlayerSchema = z.object({
   }),
 });
 
-// ==========================================
 // Parâmetro de ID de Usuário para Listagens
-// ==========================================
 export const tableUserIdParamSchema = z.object({
   params: z.object({
     userId: z.uuid({ message: "O ID do usuário inválido." }),
   }),
 });
 
+// Atualizar Estado Global (Mundo/Sessão)
+export const updateTableStateSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID da mesa inválido."),
+  }),
+  body: z.object({
+    currentLocation: z.string().optional(),
+    inGameDate: z.string().optional(),
+    weather: z.string().optional(),
+    activeScene: z.string().optional(),
+    initiativeOrder: z.any().optional(), // Aceita o array JSON da iniciativa
+    publicNotes: z.string().optional(),
+  }),
+});
+
+// Atualizar Status Temporário do Jogador (HP/Mana/Condições)
+export const updatePlayerStatusSchema = z.object({
+  params: z.object({
+    tableId: z.uuid("ID da mesa inválido."),
+    playerId: z.uuid("ID do jogador inválido."),
+  }),
+  body: z.object({
+    currentAttributes: z.any().optional(),
+    temporaryAttributes: z.any().optional(),
+    conditions: z.any().optional(),
+  }),
+});
+
+// Atualizar Notas Privadas do Jogador
+export const updatePlayerNotesSchema = z.object({
+  params: z.object({
+    tableId: z.uuid("ID da mesa inválido."),
+    playerId: z.uuid("ID do jogador inválido."),
+  }),
+  body: z.object({
+    privateNotes: z.string().optional(),
+  }),
+});
+
 // Extração de Tipos
+export type UpdateTableStateInput = z.infer<typeof updateTableStateSchema>['body'];
+export type UpdatePlayerStatusInput = z.infer<typeof updatePlayerStatusSchema>['body'];
+export type UpdatePlayerNotesInput = z.infer<typeof updatePlayerNotesSchema>['body'];
 export type CreateTableInput = z.infer<typeof createTableSchema>['body'];
 export type UpdateTableInput = z.infer<typeof updateTableSchema>['body'];
 export type JoinTableInput = z.infer<typeof joinTableSchema>['body'];

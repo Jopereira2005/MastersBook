@@ -1,11 +1,16 @@
 import { type Request, type Response } from 'express';
 import { prisma } from '../database/prisma.js';
+// Importe a instância do io que deixámos pronta no app.ts
+import { io } from '../app.js';
 
 import type { 
   CreateTableInput, 
   UpdateTableInput,
   JoinTableInput,
-  RemovePlayerInput
+  RemovePlayerInput,
+  UpdateTableStateInput,
+  UpdatePlayerStatusInput,
+  UpdatePlayerNotesInput
 } from '../schemas/table-schema.js';
 
 export class TableController {
@@ -207,12 +212,12 @@ export class TableController {
     }
   }
 
-  // Entrar na Mesa (Join)
+  // Entrar na Mesa (Join) com Inicialização de Status
   async joinTable(req: Request<{}, {}, JoinTableInput>, res: Response) {
     try {
       const { inviteCode, userId, characterId } = req.body;
 
-      // Busca a mesa pelo código de convite
+      // 1. Busca a mesa pelo código de convite
       const table = await prisma.table.findUnique({
         where: { inviteCode }
       });
@@ -222,13 +227,13 @@ export class TableController {
         return;
       }
 
-      // Trava: O Mestre não pode "entrar" como jogador na própria mesa
+      // 2. Trava: O Mestre não pode "entrar" como jogador na própria mesa
       if (table.gmId === userId) {
         res.status(400).json({ error: 'Você já é o Mestre desta mesa.' });
         return;
       }
 
-      // Verifica a Ficha (Character)
+      // 3. Verifica a Ficha (Character)
       const character = await prisma.character.findUnique({
         where: { id: characterId }
       });
@@ -248,7 +253,7 @@ export class TableController {
         return;
       }
 
-      // Verifica se o jogador já está na mesa
+      // 4. Verifica se o jogador já está na mesa
       const alreadyInTable = await prisma.tablePlayer.findFirst({
         where: { tableId: table.id, userId }
       });
@@ -258,14 +263,28 @@ export class TableController {
         return;
       }
 
-      //  Adiciona o jogador e a ficha à mesa
+      // ==========================================
+      // ✨ A MÁGICA ACONTECE AQUI ✨
+      // Criamos o TablePlayer copiando os atributos base da ficha 
+      // para os atributos "atuais" da sessão.
+      // ==========================================
       const tablePlayer = await prisma.tablePlayer.create({
         data: {
           tableId: table.id,
           userId,
-          characterId
+          characterId,
+          currentAttributes: character.attributes ?? {},
+        },
+        // 👇 IMPORTANTE: Adicione este include aqui para enviar os dados completos via Socket!
+        include: {
+          user: { select: { id: true, username: true, avatarUrl: true } },
+          character: { select: { id: true, firstName: true, race: true, class: true, avatarUrl: true } }
         }
       });
+
+      // 📢 BROADCAST: Avisa todos na mesa que um novo jogador sentou na cadeira!
+      // O evento 'player_joined' envia os dados do usuário e da ficha para o Front renderizar o novo card/token
+      io.to(table.id).emit('player_joined', tablePlayer);
 
       res.status(200).json({
         message: 'Entrou na mesa com sucesso!',
@@ -318,6 +337,9 @@ export class TableController {
         return;
       }
 
+      // 📢 BROADCAST: Avisa que o jogador saiu
+      io.to(tableId).emit('player_left', { playerId: playerId });
+
       const actionMessage = isSelf ? 'Você saiu da mesa.' : 'Jogador expulso com sucesso.';
       res.status(200).json({ message: actionMessage });
 
@@ -327,9 +349,7 @@ export class TableController {
     }
   }
 
-  // ==========================================
   // Listar Mesas que o Usuário JÁ PARTICIPA (Como Jogador)
-  // ==========================================
   async getPlayerTables(req: Request<{ userId: string }>, res: Response) {
     try {
       const { userId } = req.params;
@@ -361,9 +381,7 @@ export class TableController {
     }
   }
 
-  // ==========================================
   // Listar Mesas Disponíveis para Entrar (Lobby / Taverna)
-  // ==========================================
   async getAvailableTables(req: Request<{ userId: string }>, res: Response) {
     try {
       const { userId } = req.params;
@@ -386,6 +404,147 @@ export class TableController {
     } catch (error) {
       console.error('Erro ao buscar mesas disponíveis:', error);
       res.status(500).json({ error: 'Erro interno ao listar mesas disponíveis.' });
+    }
+  }
+
+  // Buscar Detalhes de uma Mesa (Carregar o Jogo / VTT)
+  async getTableById(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const table = await prisma.table.findUnique({
+        where: { id },
+        include: {
+          // 1. Traz os dados básicos do Mestre
+          gm: { 
+            select: { id: true, username: true, avatarUrl: true } 
+          },
+          
+          // 2. Traz o nome do Sistema
+          system: { 
+            select: { id: true, name: true } 
+          },
+
+          // 3. Traz o Estado Global do Mundo (Clima, Cena, Iniciativa)
+          state: true,
+          
+          // 4. Traz a lista completa de jogadores sentados na mesa e o status de cada um
+          players: {
+            include: {
+              user: { 
+                select: { id: true, username: true, avatarUrl: true } 
+              },
+              character: { 
+                select: { 
+                  id: true, 
+                  firstName: true, 
+                  lastName: true, 
+                  race: true, 
+                  class: true, 
+                  level: true, 
+                  avatarUrl: true, 
+                  bio: true
+                } 
+              }
+            }
+          }
+        }
+      });
+
+      if (!table) {
+        res.status(404).json({ error: 'Mesa não encontrada.' });
+        return;
+      }
+
+      res.status(200).json(table);
+    } catch (error) {
+      console.error('Erro ao buscar detalhes da mesa:', error);
+      res.status(500).json({ error: 'Erro interno ao carregar a mesa.' });
+    }
+  }
+
+  // Atualizar Estado da Sessão (Clima, Cena, Iniciativa)
+  async updateTableState(req: Request<{ id: string }, {}, UpdateTableStateInput>, res: Response) {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+
+      const updatedState = await prisma.tableState.upsert({
+        where: { tableId: id },
+        update: data,
+        create: {
+          tableId: id,
+          ...data
+        }
+      });
+
+      // 📢 BROADCAST: Avisa todos na sala (tableId) que o estado do mundo mudou
+      io.to(id).emit('state_updated', updatedState);
+
+      res.status(200).json({ message: 'Estado da mesa atualizado.', state: updatedState });
+    } catch (error) {
+      console.error('Erro ao atualizar estado da mesa:', error);
+      res.status(500).json({ error: 'Erro interno ao atualizar estado.' });
+    }
+  }
+
+  // Atualizar Status do Jogador (HP, Condições)
+  async updatePlayerStatus(req: Request<{ tableId: string, playerId: string }, {}, UpdatePlayerStatusInput>, res: Response) {
+    try {
+      const { tableId, playerId } = req.params;
+      const data = req.body;
+
+      const tablePlayer = await prisma.tablePlayer.findFirst({
+        where: { tableId, userId: playerId }
+      });
+
+      if (!tablePlayer) {
+        res.status(404).json({ error: 'Jogador não encontrado nesta mesa.' });
+        return;
+      }
+
+      const updatedPlayer = await prisma.tablePlayer.update({
+        where: { id: tablePlayer.id },
+        data
+      });
+
+      // 📢 BROADCAST: Avisa a sala que a vida/status deste jogador específico mudou
+      io.to(tableId).emit('player_status_updated', {
+        playerId: playerId,
+        newStatus: updatedPlayer
+      });
+
+      res.status(200).json({ message: 'Status do jogador atualizado.', status: updatedPlayer });
+    } catch (error) {
+      console.error('Erro ao atualizar status do jogador:', error);
+      res.status(500).json({ error: 'Erro interno ao atualizar status.' });
+    }
+  }
+
+  // Atualizar Notas Privadas do Jogador
+  async updatePlayerNotes(req: Request<{ tableId: string, playerId: string }, {}, UpdatePlayerNotesInput>, res: Response) {
+    try {
+      const { tableId, playerId } = req.params;
+      const { privateNotes } = req.body;
+
+      const tablePlayer = await prisma.tablePlayer.findFirst({
+        where: { tableId, userId: playerId }
+      });
+
+      if (!tablePlayer) {
+        res.status(404).json({ error: 'Jogador não encontrado nesta mesa.' });
+        return;
+      }
+
+      await prisma.tablePlayer.update({
+        where: { id: tablePlayer.id },
+        data: { privateNotes }
+      });
+
+      res.status(200).json({ message: 'Anotações salvas com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao atualizar notas do jogador:', error);
+      res.status(500).json({ error: 'Erro interno ao salvar notas.' });
     }
   }
 }
