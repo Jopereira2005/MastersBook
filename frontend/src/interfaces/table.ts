@@ -1,6 +1,7 @@
 import { IUser } from "./user";
 import { ISystem } from "./system";
 import { ITablePlayer } from "./table-player";
+import { ITableState } from "./table-state"; // Importar o novo estado
 
 export interface ITable {
   id?: string;
@@ -15,4 +16,7 @@ export interface ITable {
   system?: ISystem;
 
   players?: ITablePlayer[];
+  
+  // O Estado da Sessão atual (Pode ser nulo caso a mesa acabe de ser criada)
+  state?: ITableState | null; 
 }
