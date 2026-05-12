@@ -29,6 +29,7 @@ import {
 import { GMController } from "@/components/gm-controller";
 import { AttributeController } from "@/components/attribute-controller";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ChatOOC } from "@/components/chat-ooc"; // ✨ IMPORTAÇÃO DO NOVO CHAT
 import { tableService } from "@/services/table.service";
 import { toast } from "sonner";
 
@@ -38,12 +39,19 @@ export default function EmMesa() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
+  // ✨ PUXANDO O MESSAGES E O SENDMESSAGE DO HOOK
   const { 
     data: table, 
     loading, 
     updateState, 
     updatePlayerNotes, 
-    updatePlayerStatus 
+    updatePlayerStatus,
+    messages,
+    sendMessage,
+    loadMoreMessages,
+    hasMoreMessages,
+    editMessage,
+    deleteMessage
   } = useGameSession(id);
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -58,7 +66,7 @@ export default function EmMesa() {
     }
   }, [currentPlayerLink?.privateNotes]);
 
-  // ✨ SEGURANÇA: Bloqueio de Intrusos
+  // SEGURANÇA: Bloqueio de Intrusos
   useEffect(() => {
     if (!loading && table && user) {
       const isGM = user.id === table.gmId;
@@ -118,7 +126,7 @@ export default function EmMesa() {
           <div className="space-y-4">
             {table.players?.map((player) => {
               const isMe = player.userId === user?.id;
-              const canEdit = isGM || isMe; // ✨ Definição de permissão
+              const canEdit = isGM || isMe; 
               const baseKeys = ["hp", "mana", "mp", "forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"];
 
               return (
@@ -138,14 +146,12 @@ export default function EmMesa() {
                     </div>
                     
                     <div className="flex items-center gap-1">
-                      {/* Todos podem clicar, mas passamos o canEdit para o Modal ✨ */}
                       <AttributeController player={player} onUpdate={updatePlayerStatus} canEdit={canEdit}>
                         <Button variant="ghost" size="icon" className={`h-7 w-7 transition-all ${canEdit ? 'text-zinc-400 hover:text-primary' : 'text-zinc-500 hover:text-white opacity-40 group-hover:opacity-100'}`}>
                           {canEdit ? <Settings2 size={12} /> : <ScrollText size={12} />}
                         </Button>
                       </AttributeController>
 
-                      {/* Botão de Expulsar (GM apenas nos outros) */}
                       {isGM && !isMe && (
                         <Button 
                           variant="ghost" size="icon" 
@@ -159,7 +165,6 @@ export default function EmMesa() {
                   </div>
 
                   <div className="space-y-2.5">
-                    {/* Vida */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[9px] uppercase font-bold text-red-400/80">
                         <span className="flex items-center gap-1"><Heart size={8}/> Vida</span>
@@ -170,7 +175,6 @@ export default function EmMesa() {
                       </div>
                     </div>
 
-                    {/* Mana */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[9px] uppercase font-bold text-cyan-400/80">
                         <span className="flex items-center gap-1"><Zap size={8}/> Mana</span>
@@ -181,7 +185,6 @@ export default function EmMesa() {
                       </div>
                     </div>
 
-                    {/* Atributos Customizados */}
                     {player.currentAttributes && (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         {Object.entries(player.currentAttributes)
@@ -195,7 +198,6 @@ export default function EmMesa() {
                       </div>
                     )}
 
-                    {/* Condições */}
                     {player.conditions && player.conditions.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
                         {player.conditions.map(cond => (
@@ -228,9 +230,18 @@ export default function EmMesa() {
         </div>
       </TabsContent>
 
-      <TabsContent value="chat" className="flex-1 m-0 p-4 flex-col items-center justify-center opacity-20 text-center data-[state=active]:flex data-[state=inactive]:hidden">
-        <MessageSquare size={32} className="mb-2" />
-        <p className="text-[10px] italic">O chat será aberto em breve...</p>
+      {/* ABA CHAT (OOC) */}
+      <TabsContent value="chat" className="flex-1 overflow-hidden m-0 flex-col data-[state=active]:flex data-[state=inactive]:hidden">
+        <ChatOOC 
+          messages={messages || []} 
+          currentUser={user} 
+          onSendMessage={sendMessage} 
+          // ✨ PASSE AS NOVAS PROPS AQUI:
+          onLoadMore={loadMoreMessages}
+          hasMore={hasMoreMessages}
+          onEdit={editMessage}
+          onDelete={deleteMessage}
+        />
       </TabsContent>
     </Tabs>
   );
@@ -268,7 +279,6 @@ export default function EmMesa() {
             </Sheet>
           )}
 
-          {/* Botão de Abandonar Mesa (Apenas Jogadores) ✨ */}
           {!isGM && currentPlayerLink && (
             <Button 
               variant="ghost" 
@@ -294,7 +304,6 @@ export default function EmMesa() {
 
       <div className="flex-1 flex overflow-hidden relative">
         <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black">
-          {/* Initiative Tokens */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl z-10">
              <div className="bg-primary/20 p-1.5 md:p-2 rounded-full"><Sword size={12} className="text-primary" /></div>
              <div className="flex items-center gap-2 px-1">

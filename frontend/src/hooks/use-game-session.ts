@@ -1,14 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { tableService } from "@/services/table.service";
+import { messageService } from "@/services/message.service"; // ✨ IMPORTAMOS A SERVICE
 import { socket } from "@/services/socket.service";
 import { toast } from "sonner";
 import { ITable } from "@/interfaces/table";
 import { ITableState } from "@/interfaces/table-state";
 import { ITablePlayer } from "@/interfaces/table-player";
+import { IMessage } from "@/interfaces/message";
 
 export function useGameSession(tableId: string | undefined) {
   const [data, setData] = useState<ITable | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // ✨ ESTADOS DO CHAT
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [messagePage, setMessagePage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
 
   const loadSession = useCallback(async () => {
     if (!tableId) return;
@@ -16,6 +23,9 @@ export function useGameSession(tableId: string | undefined) {
     try {
       const result = await tableService.getFullTable(tableId);
       setData(result);
+      if (result.messages) {
+        setMessages(result.messages);
+      }
     } catch (error: any) {
       toast.error("A ligação ao multiverso falhou.");
     } finally {
@@ -30,33 +40,26 @@ export function useGameSession(tableId: string | undefined) {
     socket.connect();
     socket.emit("join_table", tableId);
 
+    // 🎧 OUVINTES EXISTENTES
     socket.on("state_updated", (newState: Partial<ITableState>) => {
       setData((prev) => (prev ? { ...prev, state: { ...prev.state, ...newState } } : null));
     });
 
-    // 🎧 OUVINTE 2: Status dos Jogadores (Ajustado para 'newStatus')
     socket.on("player_status_updated", (payload: any) => {
-      console.log("Mágica recebida via Socket:", payload);
-
       setData((prev) => {
         if (!prev || !prev.players) return prev;
 
-        // ✨ O segredo está aqui: o teu backend envia 'newStatus'
         const incomingData = payload.newStatus; 
-        const incomingPlayerId = payload.playerId; // ff894... (que é o userId)
+        const incomingPlayerId = payload.playerId;
 
         if (!incomingData || !incomingPlayerId) return prev;
 
         const updatedPlayers = prev.players.map((p) => {
-          // Verificamos se o ID da relação ou o ID do usuário batem com o enviado
           const isTarget = String(p.userId) === String(incomingPlayerId) || 
-                          String(p.id) === String(incomingPlayerId) ||
-                          String(p.id) === String(incomingData.id);
+                           String(p.id) === String(incomingPlayerId) ||
+                           String(p.id) === String(incomingData.id);
 
           if (isTarget) {
-            console.log(`Bingo! Atualizando ${p.character?.firstName || 'Jogador'}`);
-            
-            // Retornamos um novo objeto com os dados de 'newStatus'
             return { 
               ...p, 
               currentAttributes: incomingData.currentAttributes ?? p.currentAttributes, 
@@ -66,8 +69,6 @@ export function useGameSession(tableId: string | undefined) {
           }
           return p;
         });
-
-        // Criamos um novo objeto de mesa para disparar o re-render do React
         return { ...prev, players: updatedPlayers };
       });
     });
@@ -90,37 +91,51 @@ export function useGameSession(tableId: string | undefined) {
       });
     });
 
+    // 💬 ✨ OUVINTES DE CHAT ✨ 💬
+    socket.on("new_message", (message: IMessage) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    socket.on("message_deleted", ({ id }: { id: string }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    });
+
+    socket.on("message_updated", (updatedMsg: IMessage) => {
+      setMessages((prev) => prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m)));
+    });
+
+    socket.on("system_error", ({ message }: { message: string }) => {
+      toast.error(message || "Ação inválida no sistema.");
+    });
+
     return () => {
       socket.off("state_updated");
       socket.off("player_status_updated");
       socket.off("player_joined");
       socket.off("player_left");
+      socket.off("new_message");
+      socket.off("message_deleted");
+      socket.off("message_updated");
+      socket.off("system_error");
       socket.disconnect();
     };
   }, [tableId, loadSession]);
 
-  // ✨ FUNÇÃO COM ATUALIZAÇÃO OTIMISTA
+  // --- MÉTODOS DE ESTADO ---
   const updatePlayerStatus = async (playerId: string, status: Partial<ITablePlayer>) => {
     if (!tableId || !data) return;
-
-    // 1. Atualização Otimista: Muda no seu ecrã na hora
     setData((prev) => {
       if (!prev || !prev.players) return prev;
       return {
         ...prev,
         players: prev.players.map(p => 
-          String(p.userId) === String(playerId) 
-            ? { ...p, ...status } 
-            : p
+          String(p.userId) === String(playerId) ? { ...p, ...status } : p
         )
       };
     });
-
     try {
-      // 2. Envia para o servidor
       await tableService.patchPlayerStatus(tableId, playerId, status);
     } catch (error: any) {
-      // 3. Se der erro, recarrega os dados originais
       loadSession();
       toast.error("Falha ao sincronizar com o servidor.");
     }
@@ -154,5 +169,69 @@ export function useGameSession(tableId: string | undefined) {
     }
   };
 
-  return { data, loading, updateState, updatePlayerStatus, updatePlayerNotes };
+  // 💬 ✨ MÉTODOS DE CHAT E PAGINAÇÃO ✨ 💬
+
+  const sendMessage = (userId: string, content: string, type: 'STORY' | 'OOC', characterId?: string | null) => {
+    if (!tableId) return;
+    socket.emit('send_message', { tableId, userId, content, type, characterId: type === 'STORY' ? characterId : null });
+  };
+
+  const rollDice = (userId: string, notation: string, characterId?: string | null) => {
+    if (!tableId) return;
+    socket.emit('roll_dice', { tableId, userId, characterId, notation });
+  };
+
+  // ✨ Carregar mensagens antigas (Paginação)
+  const loadMoreMessages = async () => {
+    if (!tableId || !hasMoreMessages) return;
+    const nextPage = messagePage + 1;
+    
+    try {
+      const olderMessages = await messageService.getTableMessages(tableId, nextPage, 50);
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+      // Coloca as mensagens antigas no início do array
+      setMessages((prev) => [...olderMessages, ...prev]);
+      setMessagePage(nextPage);
+    } catch (error) {
+      toast.error("Erro ao carregar mensagens antigas.");
+    }
+  };
+
+  // ✨ Editar mensagem
+  const editMessage = async (messageId: string, newContent: string) => {
+    try {
+      await messageService.updateMessage(messageId, newContent);
+      // Não fazemos setMessages aqui pois o socket cuidará disso via "message_updated"
+    } catch (error: any) {
+      toast.error("Erro ao editar a mensagem.");
+    }
+  };
+
+  // ✨ Deletar mensagem
+  const deleteMessage = async (messageId: string) => {
+    try {
+      await messageService.deleteMessage(messageId);
+      // Não fazemos setMessages aqui pois o socket cuidará disso via "message_deleted"
+    } catch (error: any) {
+      toast.error("Erro ao deletar a mensagem.");
+    }
+  };
+
+  return { 
+    data, 
+    loading, 
+    messages, 
+    updateState, 
+    updatePlayerStatus, 
+    updatePlayerNotes,
+    sendMessage, 
+    rollDice,
+    loadMoreMessages, // Exportado
+    hasMoreMessages,  // Exportado
+    editMessage,      // Exportado
+    deleteMessage     // Exportado
+  };
 }
