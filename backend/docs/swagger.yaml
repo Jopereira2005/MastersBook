@@ -1095,6 +1095,132 @@ paths:
         500:
           description: Erro interno ao salvar anotações
 
+  /messages/table/{tableId}:
+    get:
+      summary: Listar histórico de mensagens de uma mesa
+      description: Retorna as mensagens enviadas no chat da mesa, incluindo logs de sistema e resultados de dados. Suporta paginação.
+      tags: [Messages]
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Número da página
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Quantidade de mensagens por página
+      responses:
+        200:
+          description: Lista de mensagens retornada com sucesso
+        500:
+          description: Erro interno ao buscar mensagens
+
+  # Rotas Messages
+  /messages/create:
+    post:
+      summary: Enviar uma nova mensagem (HTTP)
+      description: Cria uma mensagem no banco de dados e a emite para todos na mesa via WebSockets.
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, type, userId, tableId]
+              properties:
+                content:
+                  type: string
+                  example: "O dragão cospe fogo em direção ao guerreiro!"
+                type:
+                  type: string
+                  enum: [STORY, OOC, LOG, DICE]
+                  example: "STORY"
+                userId:
+                  type: string
+                  format: uuid
+                  example: "ID_DO_USUARIO"
+                tableId:
+                  type: string
+                  format: uuid
+                  example: "ID_DA_MESA"
+                characterId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  example: "ID_DA_FICHA_SE_HOUVER"
+      responses:
+        201:
+          description: Mensagem criada e enviada com sucesso
+        400:
+          description: Erro de validação
+
+  /messages/update/{id}:
+    patch:
+      summary: Editar conteúdo de uma mensagem
+      description: Permite ao autor editar o texto de uma mensagem enviada. Avisa a mesa via Socket que a mensagem foi alterada.
+      tags: [Messages]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  example: "Correção: O dragão cospe gelo!"
+      responses:
+        200:
+          description: Mensagem editada com sucesso
+        404:
+          description: Mensagem não encontrada
+
+  /messages/delete/{id}:
+    delete:
+      summary: Apagar uma mensagem específica
+      description: Remove a mensagem do banco de dados e solicita ao Front-end que a remova da tela via WebSockets.
+      tags: [Messages]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Mensagem removida
+        404:
+          description: Mensagem não encontrada
+
+  /messages/delete-all:
+    delete:
+      summary: Limpar todas as mensagens do banco (Debug)
+      description: Rota de desenvolvimento para limpar o histórico global de mensagens.
+      tags: [Messages]
+      responses:
+        200:
+          description: Histórico limpo com sucesso
+
   # Rotas Systems
   /systems/get-all:
     get:
