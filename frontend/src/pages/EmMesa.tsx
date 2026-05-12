@@ -55,7 +55,7 @@ export default function EmMesa() {
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [playerToRemove, setPlayerToRemove] = useState<{id: string, name: string} | null>(null);
-
+  
   const currentPlayerLink = table?.players?.find(p => p.userId === user?.id);
   const [notesBuffer, setNotesBuffer] = useState("");
 
@@ -154,7 +154,7 @@ export default function EmMesa() {
                         <Button 
                           variant="ghost" size="icon" 
                           className="h-7 w-7 text-red-500 hover:bg-red-500/10"
-                          onClick={() => setPlayerToRemove({ id: player.id!, name: player.character?.firstName || "este jogador" })}
+                          onClick={() => setPlayerToRemove({ id: player.userId!, name: player.character?.firstName || "este jogador" })}
                         >
                           <UserMinus size={12} />
                         </Button>
@@ -228,7 +228,6 @@ export default function EmMesa() {
         </div>
       </TabsContent>
 
-      {/* ✨ CORREÇÃO 2: h-full no container do chat para mobile e desktop */}
       <TabsContent value="chat" className="flex-1 h-full w-full overflow-hidden m-0 flex-col data-[state=active]:flex data-[state=inactive]:hidden">
         <ChatOOC 
           messages={messages || []} 
@@ -270,7 +269,6 @@ export default function EmMesa() {
               <SheetContent className="glass-card border-l border-primary/20 w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6 text-left">
                   <SheetTitle className="font-display text-2xl gradient-text flex items-center gap-2"><ThermometerSun className="text-primary" /> Mundo</SheetTitle>
-                  {/* ✨ CORREÇÃO 3: Descrição escondida para acessibilidade do Painel GM */}
                   <SheetDescription className="sr-only">Painel de controle do mestre da mesa.</SheetDescription>
                 </SheetHeader>
                 <GMController initialState={table.state} onUpdate={updateState} />
@@ -293,7 +291,6 @@ export default function EmMesa() {
           {isMobile && (
             <Sheet>
               <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-primary"><Users size={20}/></Button></SheetTrigger>
-              {/* ✨ CORREÇÃO 4: h-full e Títulos escondidos no mobile */}
               <SheetContent side="right" className="p-0 glass-card w-[85vw] max-w-[320px] border-l border-primary/20 flex flex-col h-full">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Menu Principal</SheetTitle>
