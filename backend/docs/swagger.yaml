@@ -947,7 +947,154 @@ paths:
           descripti"on: Sem permissão (requesterId não é o GM nem o próprio jogador)
         404:
           description: Jogador não está na mesa 
-         
+
+  /tables/get/{id}:
+    get:
+      summary: Carregar Detalhes da Mesa (Abertura do VTT)
+      description: Retorna os dados completos da campanha, incluindo o estado global do mundo (clima, cena, iniciativa) e a lista de jogadores com seus atributos atuais e tokens.
+      tags: [TablesState]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da Mesa
+      responses:
+        200:
+          description: Detalhes da mesa e estado do jogo retornados com sucesso
+        404:
+          description: Mesa não encontrada
+
+  /tables/state/{id}:
+    patch:
+      summary: Atualizar Estado Global da Sessão
+      description: Permite ao Mestre alterar o clima, a cena atual, a data in-game ou a ordem de iniciativa do combate. Utiliza upsert (cria se não existir, atualiza se existir).
+      tags: [TablesState]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da Mesa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentLocation:
+                  type: string
+                  example: "Floresta dos Sussurros"
+                inGameDate:
+                  type: string
+                  example: "14 de Outono, 1492"
+                weather:
+                  type: string
+                  example: "Chuva Densa"
+                activeScene:
+                  type: string
+                  example: "COMBAT"
+                initiativeOrder:
+                  type: array
+                  items:
+                    type: object
+                  example: [{"name": "Aragorn", "roll": 18}, {"name": "Líder Goblin", "roll": 15}]
+                publicNotes:
+                  type: string
+                  example: "Sobrevivam até o amanhecer."
+      responses:
+        200:
+          description: Estado da mesa atualizado com sucesso
+        500:
+          description: Erro interno ao atualizar estado
+
+  /tables/{tableId}/players/{playerId}/status:
+    patch:
+      summary: Atualizar Status Temporário do Jogador
+      description: Atualiza a vida atual (HP), sanidade, espaços de magia gastos, vida temporária ou condições (Envenenado, Cego) de um jogador na mesa em tempo real.
+      tags: [TablePlayers]
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: playerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do Usuário (Jogador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentAttributes:
+                  type: object
+                  example: { "hp": 22, "spellSlots_lvl1": 1 }
+                temporaryAttributes:
+                  type: object
+                  example: { "tempHp": 5, "ac_bonus": 2 }
+                conditions:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Envenenado", "Assustado"]
+      responses:
+        200:
+          description: Status atualizado com sucesso
+        404:
+          description: Jogador não encontrado nesta mesa
+        500:
+          description: Erro interno ao atualizar status
+
+  /tables/{tableId}/players/{playerId}/notes:
+    patch:
+      summary: Atualizar Anotações Privadas do Jogador
+      description: Salva o rascunho de sessão secreto de um jogador. Ninguém mais na mesa consegue ler este campo, exceto ele mesmo.
+      tags: [TablePlayers]
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: playerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [privateNotes]
+              properties:
+                privateNotes:
+                  type: string
+                  example: "Lembrar de procurar o ferreiro amanhã de manhã para consertar a espada."
+      responses:
+        200:
+          description: Anotações salvas com sucesso
+        404:
+          description: Jogador não encontrado nesta mesa
+        500:
+          description: Erro interno ao salvar anotações
+
   # Rotas Systems
   /systems/get-all:
     get:
