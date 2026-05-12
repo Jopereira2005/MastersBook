@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   Loader2, MapPin, Calendar, Cloud, Users, 
   ChevronRight, ChevronLeft, Sword, ScrollText, 
-  Settings2, MessageSquare, ThermometerSun, Info, Save,
+  Settings2, MessageSquare, ThermometerSun, Save,
   Heart, Zap, UserMinus, LogOut
 } from "lucide-react";
 
@@ -29,7 +29,7 @@ import {
 import { GMController } from "@/components/gm-controller";
 import { AttributeController } from "@/components/attribute-controller";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ChatOOC } from "@/components/chat-ooc"; // ✨ IMPORTAÇÃO DO NOVO CHAT
+import { ChatOOC } from "@/components/chat-ooc";
 import { tableService } from "@/services/table.service";
 import { toast } from "sonner";
 
@@ -39,7 +39,6 @@ export default function EmMesa() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // ✨ PUXANDO O MESSAGES E O SENDMESSAGE DO HOOK
   const { 
     data: table, 
     loading, 
@@ -66,7 +65,6 @@ export default function EmMesa() {
     }
   }, [currentPlayerLink?.privateNotes]);
 
-  // SEGURANÇA: Bloqueio de Intrusos
   useEffect(() => {
     if (!loading && table && user) {
       const isGM = user.id === table.gmId;
@@ -107,8 +105,9 @@ export default function EmMesa() {
     }
   };
 
+  // ✨ CORREÇÃO 1: h-full e w-full para garantir o preenchimento do Flexbox
   const renderSidebar = () => (
-    <Tabs defaultValue="party" className="flex-1 flex flex-col overflow-hidden">
+    <Tabs defaultValue="party" className="flex-1 flex flex-col h-full w-full overflow-hidden">
       <div className="px-4 pt-4 shrink-0">
         <TabsList className="w-full bg-black/40 border border-white/5 p-1">
           <TabsTrigger value="party" className="flex-1 text-[10px] md:text-xs gap-1 py-2"><Users size={14}/> Party</TabsTrigger>
@@ -119,11 +118,10 @@ export default function EmMesa() {
         </TabsList>
       </div>
 
-      {/* ABA PARTY */}
       <TabsContent value="party" className="flex-1 overflow-hidden flex-col m-0 p-4 data-[state=active]:flex data-[state=inactive]:hidden">
         <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 shrink-0">Membros da Party</h3>
         <ScrollArea className="flex-1 pr-3">
-          <div className="space-y-4">
+          <div className="space-y-4 pb-10">
             {table.players?.map((player) => {
               const isMe = player.userId === user?.id;
               const canEdit = isGM || isMe; 
@@ -220,8 +218,8 @@ export default function EmMesa() {
             <Save size={12} className="mr-1"/> Salvar
           </Button>
         </div>
-        <div className="relative group">
-          <Textarea className="h-[400px] w-full bg-black/20 border-white/5 resize-y text-xs leading-relaxed p-4 pb-10" value={notesBuffer} onChange={(e) => setNotesBuffer(e.target.value)} />
+        <div className="relative group flex-1">
+          <Textarea className="h-full min-h-[400px] w-full bg-black/20 border-white/5 resize-none text-xs leading-relaxed p-4 pb-10" value={notesBuffer} onChange={(e) => setNotesBuffer(e.target.value)} />
           {notesBuffer !== (currentPlayerLink?.privateNotes || "") && (
             <div className="absolute bottom-3 right-3 flex items-center gap-1.5 text-[9px] text-amber-500 animate-pulse bg-black/60 px-2 py-1 rounded-md pointer-events-none">
               <div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Não Salvo
@@ -230,13 +228,12 @@ export default function EmMesa() {
         </div>
       </TabsContent>
 
-      {/* ABA CHAT (OOC) */}
-      <TabsContent value="chat" className="flex-1 overflow-hidden m-0 flex-col data-[state=active]:flex data-[state=inactive]:hidden">
+      {/* ✨ CORREÇÃO 2: h-full no container do chat para mobile e desktop */}
+      <TabsContent value="chat" className="flex-1 h-full w-full overflow-hidden m-0 flex-col data-[state=active]:flex data-[state=inactive]:hidden">
         <ChatOOC 
           messages={messages || []} 
           currentUser={user} 
           onSendMessage={sendMessage} 
-          // ✨ PASSE AS NOVAS PROPS AQUI:
           onLoadMore={loadMoreMessages}
           hasMore={hasMoreMessages}
           onEdit={editMessage}
@@ -247,7 +244,7 @@ export default function EmMesa() {
   );
 
   return (
-    <div className="h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-20 shrink-0">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
           <div className="min-w-0 text-left">
@@ -270,9 +267,11 @@ export default function EmMesa() {
                   <Settings2 size={14} className="md:mr-2" /><span className="hidden md:inline">Painel do Mestre</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent className="glass-card border-l border-primary/20 w-full sm:max-w-md">
+              <SheetContent className="glass-card border-l border-primary/20 w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6 text-left">
                   <SheetTitle className="font-display text-2xl gradient-text flex items-center gap-2"><ThermometerSun className="text-primary" /> Mundo</SheetTitle>
+                  {/* ✨ CORREÇÃO 3: Descrição escondida para acessibilidade do Painel GM */}
+                  <SheetDescription className="sr-only">Painel de controle do mestre da mesa.</SheetDescription>
                 </SheetHeader>
                 <GMController initialState={table.state} onUpdate={updateState} />
               </SheetContent>
@@ -294,7 +293,14 @@ export default function EmMesa() {
           {isMobile && (
             <Sheet>
               <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-primary"><Users size={20}/></Button></SheetTrigger>
-              <SheetContent side="right" className="p-0 glass-card w-[280px] border-l border-primary/20">{renderSidebar()}</SheetContent>
+              {/* ✨ CORREÇÃO 4: h-full e Títulos escondidos no mobile */}
+              <SheetContent side="right" className="p-0 glass-card w-[85vw] max-w-[320px] border-l border-primary/20 flex flex-col h-full">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Menu Principal</SheetTitle>
+                  <SheetDescription>Acesse a Party, Chat e as suas Notas.</SheetDescription>
+                </SheetHeader>
+                {renderSidebar()}
+              </SheetContent>
             </Sheet>
           )}
           
@@ -329,7 +335,7 @@ export default function EmMesa() {
         </main>
 
         {!isMobile && (
-          <aside className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 border-l border-white/5 bg-zinc-900/30 backdrop-blur-sm flex flex-col relative`}>
+          <aside className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 border-l border-white/5 bg-zinc-900/30 backdrop-blur-sm flex flex-col h-full relative`}>
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="absolute -left-4 top-1/2 -translate-y-1/2 h-8 w-4 bg-zinc-800 border border-white/10 rounded-l flex items-center justify-center text-zinc-500 hover:text-white">
               {sidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
