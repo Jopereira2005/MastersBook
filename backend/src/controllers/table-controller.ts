@@ -2,6 +2,7 @@ import { type Request, type Response } from 'express';
 import { prisma } from '../database/prisma.js';
 // Importe a instância do io que deixámos pronta no app.ts
 import { io } from '../app.js';
+import { logGameAction } from '../utils/game-logger.js';
 
 import type { 
   CreateTableInput, 
@@ -285,6 +286,11 @@ export class TableController {
       // 📢 BROADCAST: Avisa todos na mesa que um novo jogador sentou na cadeira!
       // O evento 'player_joined' envia os dados do usuário e da ficha para o Front renderizar o novo card/token
       io.to(table.id).emit('player_joined', tablePlayer);
+      await logGameAction(
+        table.id, 
+        userId, 
+        `${character.firstName} juntou-se à aventura!`
+      );
 
       res.status(200).json({
         message: 'Entrou na mesa com sucesso!',
@@ -339,6 +345,11 @@ export class TableController {
 
       // 📢 BROADCAST: Avisa que o jogador saiu
       io.to(tableId).emit('player_left', { playerId: playerId });
+
+      const logText = isSelf 
+        ? "Um jogador arrumou as suas coisas e abandonou a mesa." 
+        : "O Mestre expulsou um jogador da sessão.";
+      await logGameAction(tableId, requesterId, logText);
 
       const actionMessage = isSelf ? 'Você saiu da mesa.' : 'Jogador expulso com sucesso.';
       res.status(200).json({ message: actionMessage });
@@ -447,6 +458,14 @@ export class TableController {
                 } 
               }
             }
+          },
+          messages: {
+            take: 50, // Pega as últimas 50 mensagens
+            orderBy: { createdAt: 'desc' }, // Traz da mais nova para a mais velha (para o limite funcionar certo)
+            include: {
+              user: { select: { username: true, avatarUrl: true } },
+              character: { select: { firstName: true, avatarUrl: true } }
+            }
           }
         }
       });
@@ -454,6 +473,10 @@ export class TableController {
       if (!table) {
         res.status(404).json({ error: 'Mesa não encontrada.' });
         return;
+      }
+
+      if (table.messages) {
+        table.messages = table.messages.reverse();
       }
 
       res.status(200).json(table);
@@ -481,6 +504,21 @@ export class TableController {
       // 📢 BROADCAST: Avisa todos na sala (tableId) que o estado do mundo mudou
       io.to(id).emit('state_updated', updatedState);
 
+      let logText = "O Mestre alterou o estado do mundo.";
+      if (data.weather) logText = `O clima mudou repentinamente para: ${data.weather}.`;
+      if (data.activeScene) logText = `A cena mudou para: ${data.activeScene === 'COMBAT' ? '⚔️ Combate!' : 'Exploração'}.`;
+      if (data.currentLocation) logText = `O grupo viajou para: ${data.currentLocation}.`;
+
+      // Busca rápida para descobrir quem é o GM desta mesa
+      const table = await prisma.table.findUnique({
+        where: { id },
+        select: { gmId: true }
+      });
+
+      if (table) {
+        await logGameAction(id, table.gmId, logText);
+      }
+
       res.status(200).json({ message: 'Estado da mesa atualizado.', state: updatedState });
     } catch (error) {
       console.error('Erro ao atualizar estado da mesa:', error);
@@ -505,7 +543,8 @@ export class TableController {
 
       const updatedPlayer = await prisma.tablePlayer.update({
         where: { id: tablePlayer.id },
-        data
+        data,
+        include: {character: { select: { firstName: true } }}
       });
 
       // 📢 BROADCAST: Avisa a sala que a vida/status deste jogador específico mudou
@@ -513,6 +552,17 @@ export class TableController {
         playerId: playerId,
         newStatus: updatedPlayer
       });
+
+      const charName = updatedPlayer.character?.firstName || "Um herói";
+      let statusLogText = `Os status de ${charName} foram atualizados.`;
+      
+      if (data.conditions) {
+        statusLogText = `${charName} recebeu novas condições: ${data.conditions.join(', ')}.`;
+      } else if (data.currentAttributes) {
+        statusLogText = `Os atributos de ${charName} sofreram alterações.`;
+      }
+
+      await logGameAction(tableId, playerId, statusLogText);
 
       res.status(200).json({ message: 'Status do jogador atualizado.', status: updatedPlayer });
     } catch (error) {

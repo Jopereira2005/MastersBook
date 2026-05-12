@@ -7,7 +7,10 @@ generator client {
   output   = "../generated/prisma"
 }
 
-// Definição do ENUM para status de amizade
+// ==========================================
+// ENUMS
+// ==========================================
+
 enum FriendshipStatus {
   PENDING
   ACCEPTED
@@ -15,7 +18,17 @@ enum FriendshipStatus {
   BLOCKED
 }
 
-// Tabela de Usuários
+enum MessageType {
+  STORY   // Chat de Jogo (In-Character/Narrativa)
+  OOC     // Chat de Players (Sidebar/Out-of-Character)
+  LOG     // Registro de Sistema (Dano, Clima, etc)
+  DICE    // Resultados de Dados
+}
+
+// ==========================================
+// MODELOS DE USUÁRIO E SOCIAL
+// ==========================================
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -32,9 +45,26 @@ model User {
   memberships TablePlayer[]
   friendsSent Friendship[]  @relation("User1")
   friendsRecv Friendship[]  @relation("User2")
+  messages    Message[]     // Relacionamento com Chat
 }
 
-// Tabela de Sistemas de RPG
+model Friendship {
+  id        String           @id @default(uuid())
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  user1Id String @map("user_id_1")
+  user1   User   @relation("User1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id String @map("user_id_2")
+  user2   User   @relation("User2", fields: [user2Id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// MODELOS DE RPG E REGRAS
+// ==========================================
+
 model System {
   id          String   @id @default(uuid())
   name        String
@@ -46,7 +76,6 @@ model System {
   tables     Table[]
 }
 
-// Tabela de Personagens (Fichas)
 model Character {
   id         String   @id @default(uuid())
   firstName  String   @map("first_name")
@@ -54,7 +83,7 @@ model Character {
   race       String
   class      String
   level      Int      @default(1)
-  attributes Json     // Dados flexíveis como HP máximo, Atributos base
+  attributes Json     // Dados base da ficha
   bio        String?
   avatarUrl  String?  @map("avatar_url")
   createdAt  DateTime @default(now()) @map("created_at")
@@ -66,9 +95,13 @@ model Character {
   system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
 
   tablePlayers TablePlayer[]
+  messages     Message[]     // Relacionamento com Chat (Ficha falando)
 }
 
-// Tabela de Mesas (Campanhas)
+// ==========================================
+// MODELOS DE MESA E SESSÃO (VTT)
+// ==========================================
+
 model Table {
   id          String  @id @default(uuid())
   name        String
@@ -81,56 +114,57 @@ model Table {
   systemId String @map("system_id")
   system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
 
-  players TablePlayer[]
-  state       TableState?
+  players  TablePlayer[]
+  state    TableState?
+  messages Message[]     // Histórico de mensagens da mesa
 }
 
-// Tabela Intermediária (Jogadores nas Mesas com Status de Sessão)
 model TablePlayer {
   id                  String  @id @default(uuid())
-
-  // O Status Temporário "Durante a Mesa" (Agnóstico de Sistema)
   currentAttributes   Json?   @map("current_attributes")
   temporaryAttributes Json?   @map("temporary_attributes")
   conditions          Json?
   privateNotes        String? @map("private_notes")
 
-  // Relacionamentos
   userId      String    @map("user_id")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   tableId     String    @map("table_id")
   table       Table     @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
   characterId String    @map("character_id")
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
 
-// Tabela de Estado Global da Sessão (O Mundo)
 model TableState {
   id              String  @id @default(uuid())
   currentLocation String? @map("current_location")
   inGameDate      String? @map("in_game_date")
   weather         String?
-  activeScene     String  @default("EXPLORATION") @map("active_scene") // Pode ser EXPLORATION, COMBAT, SOCIAL...
-  initiativeOrder Json?   @map("initiative_order") // Guarda a ordem dos turnos: [{ characterId: "...", roll: 18 }]
-  publicNotes     String? @map("public_notes")     // Quadro de avisos do GM para todos
+  activeScene     String  @default("EXPLORATION") @map("active_scene")
+  initiativeOrder Json?   @map("initiative_order")
+  publicNotes     String? @map("public_notes")
 
-  // Relação 1-para-1 com a Mesa
-  tableId         String  @unique @map("table_id") // O @unique é o que garante que é 1-para-1
-  table           Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId String @unique @map("table_id")
+  table   Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
 }
 
-// Tabela de Amizades
-model Friendship {
-  id        String           @id @default(uuid())
-  status    FriendshipStatus @default(PENDING) // Uso do Enum
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at")
+// ==========================================
+// SISTEMA DE CHAT E LOGS
+// ==========================================
 
-  user1Id String @map("user_id_1")
-  user1   User   @relation("User1", fields: [user1Id], references: [id], onDelete: Cascade)
+model Message {
+  id          String      @id @default(uuid())
+  type        MessageType @default(STORY)
+  content     String      @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at")
 
-  user2Id String @map("user_id_2")
-  user2   User   @relation("User2", fields: [user2Id], references: [id], onDelete: Cascade)
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characterId String?     @map("character_id")
+  character   Character?  @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  tableId     String      @map("table_id")
+  table       Table       @relation(fields: [tableId], references: [id], onDelete: Cascade)
 }
+
+

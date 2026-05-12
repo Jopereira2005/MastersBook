@@ -4,6 +4,7 @@ import { characterRoutes } from './character-routes.js';
 import { friendshipRoutes } from './friendship-routes.js';
 import { tableRoutes } from './table-routes.js';
 import { systemRoutes } from './system-routes.js';
+import { messageRoutes } from './message-routes.js';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/characters', characterRoutes);
 router.use('/friendships', friendshipRoutes);
 router.use('/tables', tableRoutes);
 router.use('/systems', systemRoutes);
+router.use('/messages', messageRoutes);
 
 export { router };
