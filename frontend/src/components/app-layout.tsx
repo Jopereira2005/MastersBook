@@ -7,7 +7,7 @@ import Notifications from "@/components/Notifications";
 const mobileItems = [
   { to: "/home", label: "Início", icon: Home },
   { to: "/fichas", label: "Fichas", icon: ScrollText },
-  { to: "/mesa", label: "Mesas", icon: Dices },
+  { to: "/mesas", label: "Mesas", icon: Dices },
   { to: "/amigos", label: "Amigos", icon: Users },
   { to: "/perfil", label: "Perfil", icon: UserCircle }
 ];

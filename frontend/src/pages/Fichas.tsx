@@ -99,9 +99,9 @@ export default function Fichas() {
       ) : characters.length === 0 ? (
         <div className="text-center p-20 glass-card border-dashed border-primary/20">
           <Sparkles className="mx-auto text-primary/40 mb-4" size={48} />
-          <p className="text-muted-foreground">O teu grimório está vazio. Não tens heróis neste mundo.</p>
+          <p className="text-muted-foreground">O teu grimório está vazio. Você não tem heróis neste mundo.</p>
           <Button variant="link" onClick={() => setIsFormOpen(true)} className="text-primary mt-2 p-0">
-            Que tal forjares o primeiro?
+            Que tal forjar o primeiro?
           </Button>
         </div>
       ) : (
@@ -115,7 +115,7 @@ export default function Fichas() {
               {/* Avatar (Emoji) */}
               <div className="h-16 w-16 flex items-center justify-center rounded-full bg-zinc-900 border border-primary/20 text-3xl group-hover:scale-110 transition-transform shadow-glow">
                 
-                {char.avatarUrl && char.avatarUrl.length <= 2 ? (
+                {char.avatarUrl && char.avatarUrl.length <= 5 ? (
                   <span>{char.avatarUrl}</span>
                 ) : (
                   "👤"
@@ -164,7 +164,7 @@ export default function Fichas() {
               {editingChar ? "Editar Herói" : "Forjar Novo Herói"}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Preenche os detalhes do teu herói, como nome, raça, classe e atributos para salvar no teu grimório.
+              Preenche os detalhes do seu herói, como nome, raça, classe e atributos para salvar no seu grimório.
             </DialogDescription>
           </DialogHeader>
           

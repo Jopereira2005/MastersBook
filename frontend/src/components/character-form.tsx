@@ -134,7 +134,7 @@ export function CharacterForm({ mode, initialData, systems, userId, onSuccess }:
           <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Ex: Sir Paxe" className="bg-background/50 border-primary/20" required />
         </div>
         <div className="space-y-2">
-          <Label className="text-zinc-300">Sobrenome / Alcunha</Label>
+          <Label className="flex items-center gap-2 text-zinc-300"><Swords size={14} className="text-primary"/> Sobrenome / Alcunha</Label>
           <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Ex: o Bagre" className="bg-background/50 border-primary/20" />
         </div>
         <div className="space-y-2">
