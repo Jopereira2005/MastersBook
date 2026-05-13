@@ -1,0 +1,153 @@
+import { useState, useRef, useEffect } from "react";
+import { Send, Dices, ScrollText, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { IMessage } from "@/interfaces/message";
+import { ITablePlayer } from "@/interfaces/table-player";
+import { IUser } from "@/interfaces/user";
+
+interface ChatStoryProps {
+  messages: IMessage[];
+  currentUser: IUser | null;
+  currentPlayer: ITablePlayer | undefined;
+  isGM: boolean;
+  onSendMessage: (userId: string, content: string, type: 'STORY' | 'OOC' | 'LOG', characterId?: string | null) => void;
+  onRollDice: (userId: string, notation: string, characterId?: string | null) => void;
+}
+
+export function ChatStory({ messages, currentUser, currentPlayer, isGM, onSendMessage, onRollDice }: ChatStoryProps) {
+  const [inputValue, setInputValue] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ✨ FILTRO NOVO: Apenas História e Dados. Ignoramos OOC e LOGS de sistema.
+  const storyMessages = messages.filter(m => m.type === "STORY" || m.type === "DICE");
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [storyMessages.length]);
+
+  const handleSend = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!inputValue.trim() || !currentUser) return;
+
+    const content = inputValue.trim();
+
+    // 🎲 COMANDO DE DADOS
+    if (content.startsWith("/r ") || content.startsWith("/roll ")) {
+      const notation = content.replace(/^\/(r|roll)\s+/, "");
+      onRollDice(currentUser.id!, notation, currentPlayer?.characterId);
+    }
+    // 📜 COMANDO DE NARRADOR (Apenas GM)
+    else if (isGM && content.startsWith("/desc ")) {
+      const descContent = content.replace(/^\/desc\s+/, "");
+      // ✨ Enviamos como STORY para ficar no palco, mas com characterId NULO para virar "Narrador"
+      onSendMessage(currentUser.id!, descContent, "STORY", null); 
+    }
+    // 🗣️ FALA NORMAL DE PERSONAGEM OU NPC
+    else {
+      onSendMessage(currentUser.id!, content, "STORY", currentPlayer?.characterId);
+    }
+
+    setInputValue("");
+  };
+
+  const renderContent = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={i} className="text-primary font-black text-xl mx-1 bg-primary/10 px-1 rounded">{part.slice(2, -2)}</strong>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full w-full relative">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 space-y-6 pb-32">
+        {storyMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 opacity-30 space-y-4 select-none">
+            <ScrollText size={80} className="text-primary" />
+            <h2 className="font-display text-xl uppercase tracking-[0.3em]">A Lenda Começa...</h2>
+          </div>
+        ) : (
+          storyMessages.map((msg, idx) => {
+            const isDice = msg.type === "DICE";
+            // É narrador se for História, mas não tiver personagem atrelado (O GM usou /desc)
+            const isNarrator = msg.type === "STORY" && !msg.characterId;
+
+            if (isNarrator) {
+              return (
+                <div key={msg.id || idx} className="flex justify-center my-8 animate-in fade-in zoom-in duration-500">
+                  <div className="bg-black/60 border border-white/5 rounded-xl px-6 py-4 max-w-2xl text-center shadow-2xl backdrop-blur-sm">
+                    <Sparkles size={16} className="text-primary mx-auto mb-3 opacity-50" />
+                    <p className="text-zinc-300 text-sm md:text-base font-serif italic leading-relaxed">
+                      {renderContent(msg.content)}
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
+            const nameToShow = msg.character?.firstName || msg.user?.username || "Desconhecido";
+            const avatarToShow = msg.character?.avatarUrl || msg.user?.avatarUrl;
+
+            return (
+              <div key={msg.id || idx} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2">
+                <Avatar className="h-10 w-10 md:h-12 md:w-12 border border-primary/20 shadow-glow shrink-0 mt-1">
+                  <AvatarImage src={avatarToShow || undefined} className="object-cover" />
+                  <AvatarFallback className="bg-zinc-900 text-primary font-bold">
+                    {nameToShow.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex flex-col w-full max-w-[85%] md:max-w-[70%]">
+                  <span className="text-xs md:text-sm font-bold text-white tracking-wide mb-1 ml-1">
+                    {nameToShow}
+                  </span>
+                  
+                  {isDice ? (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 md:p-4 inline-block self-start shadow-inner">
+                      <div className="flex items-center gap-2 text-primary/70 font-black text-[10px] uppercase tracking-widest mb-2">
+                        <Dices size={14} /> Sistema de Regras
+                      </div>
+                      <div className="text-zinc-200 text-sm md:text-base bg-black/60 rounded-lg p-3 border border-white/5 shadow-md">
+                        {renderContent(msg.content)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-zinc-300 text-sm md:text-base leading-relaxed font-serif bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5 shadow-md">
+                      {renderContent(msg.content)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-16">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSend} className="relative flex items-center group">
+            <Input 
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={isGM ? "Descreva a cena (/desc) ou fale como NPC..." : "O que o seu personagem faz? (Use /r 1d20 para rolar)"} 
+              className="bg-black/80 border-primary/30 h-14 pl-4 pr-16 text-sm md:text-base text-zinc-100 placeholder:text-zinc-600 rounded-2xl focus-visible:ring-primary shadow-2xl backdrop-blur-md transition-all font-serif"
+            />
+            <Button 
+              type="submit" 
+              size="icon" 
+              disabled={!inputValue.trim()}
+              className="absolute right-2 h-10 w-10 bg-primary text-primary-foreground hover:bg-primary/80 rounded-xl transition-all shadow-glow"
+            >
+              {inputValue.startsWith("/r") || inputValue.startsWith("/roll") ? <Dices size={18} /> : <Send size={18} />}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
