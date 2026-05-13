@@ -454,7 +454,8 @@ export class TableController {
                   class: true, 
                   level: true, 
                   avatarUrl: true, 
-                  bio: true
+                  bio: true,
+                  attributes: true
                 } 
               }
             }

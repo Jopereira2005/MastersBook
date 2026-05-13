@@ -7,6 +7,7 @@ import { ITable } from "@/interfaces/table";
 import { ITableState } from "@/interfaces/table-state";
 import { ITablePlayer } from "@/interfaces/table-player";
 import { IMessage } from "@/interfaces/message";
+import { characterService } from "@/services/character.service";
 
 export function useGameSession(tableId: string | undefined) {
   const [data, setData] = useState<ITable | null>(null);
@@ -169,6 +170,28 @@ export function useGameSession(tableId: string | undefined) {
     }
   };
 
+  const syncCharacterAttributes = async (characterId: string, syncData: any) => {
+    try {
+      const updatedCharacter = await characterService.update(characterId, syncData);
+    
+      setData((prev) => {
+        if (!prev || !prev.players) return prev;
+        return {
+          ...prev,
+          players: prev.players.map(p => 
+            p.characterId === characterId 
+              ? { ...p, character: updatedCharacter } 
+              : p
+          )
+        };
+      });
+
+      toast.success("Evolução salva na ficha original!");
+    } catch (error) {
+      toast.error("Erro ao salvar permanentemente.");
+    }
+  };
+
   // 💬 ✨ MÉTODOS DE CHAT E PAGINAÇÃO ✨ 💬
 
   const sendMessage = (userId: string, content: string, type: 'STORY' | 'OOC', characterId?: string | null) => {
@@ -232,6 +255,7 @@ export function useGameSession(tableId: string | undefined) {
     loadMoreMessages, // Exportado
     hasMoreMessages,  // Exportado
     editMessage,      // Exportado
-    deleteMessage     // Exportado
+    deleteMessage,    // Exportado
+    syncCharacterAttributes
   };
 }

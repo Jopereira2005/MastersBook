@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Loader2, MapPin, Calendar, Cloud, Users, 
-  ChevronRight, ChevronLeft, Sword, ScrollText, 
+  ChevronRight, Sword, ScrollText, 
   Settings2, MessageSquare, ThermometerSun, Save,
-  Heart, Zap, UserMinus, LogOut
+  Heart, Zap, UserMinus, LogOut, Activity
 } from "lucide-react";
 
 // Hooks e Contextos
@@ -15,7 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Componentes UI
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,9 @@ import {
 import { GMController } from "@/components/gm-controller";
 import { AttributeController } from "@/components/attribute-controller";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ChatStory } from "@/components/chat-story";
 import { ChatOOC } from "@/components/chat-ooc";
+import { SystemLogs } from "@/components/system-logs";
 import { tableService } from "@/services/table.service";
 import { toast } from "sonner";
 
@@ -47,10 +49,12 @@ export default function EmMesa() {
     updatePlayerStatus,
     messages,
     sendMessage,
+    rollDice,
     loadMoreMessages,
     hasMoreMessages,
     editMessage,
-    deleteMessage
+    deleteMessage,
+    syncCharacterAttributes
   } = useGameSession(id);
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -105,15 +109,15 @@ export default function EmMesa() {
     }
   };
 
-  // ✨ CORREÇÃO 1: h-full e w-full para garantir o preenchimento do Flexbox
   const renderSidebar = () => (
     <Tabs defaultValue="party" className="flex-1 flex flex-col h-full w-full overflow-hidden">
       <div className="px-4 pt-4 shrink-0">
-        <TabsList className="w-full bg-black/40 border border-white/5 p-1">
-          <TabsTrigger value="party" className="flex-1 text-[10px] md:text-xs gap-1 py-2"><Users size={14}/> Party</TabsTrigger>
-          <TabsTrigger value="chat" className="flex-1 text-[10px] md:text-xs gap-1 py-2"><MessageSquare size={14}/> Chat</TabsTrigger>
+        <TabsList className="w-full bg-black/40 border border-white/5 p-1 h-auto flex flex-wrap">
+          <TabsTrigger value="party" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><Users size={14}/> Party</TabsTrigger>
+          <TabsTrigger value="chat" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><MessageSquare size={14}/> Chat</TabsTrigger>
+          <TabsTrigger value="logs" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><Activity size={14}/> Logs</TabsTrigger>
           {currentPlayerLink && (
-            <TabsTrigger value="notes" className="flex-1 text-[10px] md:text-xs gap-1 py-2"><ScrollText size={14}/> Notas</TabsTrigger>
+            <TabsTrigger value="notes" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><ScrollText size={14}/> Notas</TabsTrigger>
           )}
         </TabsList>
       </div>
@@ -125,26 +129,30 @@ export default function EmMesa() {
             {table.players?.map((player) => {
               const isMe = player.userId === user?.id;
               const canEdit = isGM || isMe; 
-              const baseKeys = ["hp", "mana", "mp", "forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"];
+              const baseKeys = ["hp", "mana", "mp", "forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma", "level"];
 
               return (
                 <div key={player.id} className="group relative p-3 rounded-xl bg-white/5 border border-white/5 space-y-3 transition-all hover:bg-white/10">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border border-primary/20">
+                      <AvatarImage src={player.character?.avatarUrl || undefined} className="object-cover" />
                       <AvatarFallback className="bg-zinc-900 text-primary text-xs">
-                        {player.character?.avatarUrl && player.character?.avatarUrl.length <= 5 ? 
-                          player.character?.avatarUrl : 
-                          player.character?.firstName?.charAt(0).toUpperCase() || "?"
-                        }
+                        {player.character?.firstName?.charAt(0).toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-xs font-bold text-white truncate">{player.character?.firstName} {isMe && "(Você)"}</p>
-                      <p className="text-[10px] text-zinc-500 uppercase truncate">{player.character?.class} • Lvl {player.character?.level}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase truncate">{player.character?.class} • Lvl {player.currentAttributes?.level ?? player.character?.level ?? 1}</p>
                     </div>
                     
                     <div className="flex items-center gap-1">
-                      <AttributeController player={player} onUpdate={updatePlayerStatus} canEdit={canEdit}>
+                      <AttributeController 
+                        player={player} 
+                        onUpdate={updatePlayerStatus} 
+                        canEdit={canEdit}
+                        onSyncCharacter={syncCharacterAttributes}
+                        isOwner={player.userId === user?.id}
+                      >
                         <Button variant="ghost" size="icon" className={`h-7 w-7 transition-all ${canEdit ? 'text-zinc-400 hover:text-primary' : 'text-zinc-500 hover:text-white opacity-40 group-hover:opacity-100'}`}>
                           {canEdit ? <Settings2 size={12} /> : <ScrollText size={12} />}
                         </Button>
@@ -164,22 +172,41 @@ export default function EmMesa() {
 
                   <div className="space-y-2.5">
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[9px] uppercase font-bold text-red-400/80">
-                        <span className="flex items-center gap-1"><Heart size={8}/> Vida</span>
-                        <span>{player.currentAttributes?.hp || 0} / {player.character?.attributes?.hp || 1}</span>
+                      <div className="flex justify-between text-[9px] uppercase font-bold">
+                        <span className="flex items-center gap-1 text-red-400/80"><Heart size={8}/> Vida</span>
+                        <div className="flex gap-2">
+                          {player.temporaryAttributes?.tempHp > 0 && (
+                            <span className="text-amber-400">+{player.temporaryAttributes.tempHp} Escudo</span>
+                          )}
+                          <span className="text-zinc-300">
+                            {player.currentAttributes?.hp || 0} / {player.character?.attributes?.hp || 1}
+                          </span>
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full bg-red-950/30 rounded-full overflow-hidden border border-red-500/10">
-                        <div className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.hp || 0) / (player.character?.attributes?.hp || 1)) * 100))}%` }} />
+                      <div className="relative h-1.5 w-full bg-red-950/30 rounded-full overflow-hidden border border-red-500/10">
+                        <div 
+                          className="absolute h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" 
+                          style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.hp || 0) / (player.character?.attributes?.hp || 1)) * 100))}%` }} 
+                        />
+                        {player.temporaryAttributes?.tempHp > 0 && (
+                          <div 
+                            className="absolute h-full bg-amber-400/60 transition-all duration-500"
+                            style={{ width: `${Math.min(100, (player.temporaryAttributes.tempHp / (player.character?.attributes?.hp || 1)) * 100)}%` }}
+                          />
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-[9px] uppercase font-bold text-cyan-400/80">
                         <span className="flex items-center gap-1"><Zap size={8}/> Mana</span>
-                        <span>{player.currentAttributes?.mp || player.currentAttributes?.mana || 0} / {player.character?.attributes?.mp || player.character?.attributes?.mana || 1}</span>
+                        <span>{player.currentAttributes?.mana || 0} / {player.character?.attributes?.mana || 1}</span>
                       </div>
                       <div className="h-1.5 w-full bg-cyan-950/30 rounded-full overflow-hidden border border-cyan-500/10">
-                        <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.mp || player.currentAttributes?.mana || 0) / (player.character?.attributes?.mp || player.character?.attributes?.mana || 1)) * 100))}%` }} />
+                        <div 
+                          className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" 
+                          style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.mana || 0) / (player.character?.attributes?.mana || 1)) * 100))}%` }} 
+                        />
                       </div>
                     </div>
 
@@ -198,8 +225,10 @@ export default function EmMesa() {
 
                     {player.conditions && player.conditions.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
-                        {player.conditions.map(cond => (
-                          <Badge key={cond} variant="outline" className="bg-red-950/30 text-red-400 border-red-500/20 text-[8px] uppercase px-1.5 py-0">{cond}</Badge>
+                        {player.conditions.map((cond, idx) => (
+                          <Badge key={idx} variant="outline" className="bg-red-950/30 text-red-400 border-red-500/20 text-[8px] uppercase px-1.5 py-0">
+                            {cond}
+                          </Badge>
                         ))}
                       </div>
                     )}
@@ -239,12 +268,16 @@ export default function EmMesa() {
           onDelete={deleteMessage}
         />
       </TabsContent>
+
+      <TabsContent value="logs" className="flex-1 h-full w-full overflow-hidden m-0 flex-col data-[state=active]:flex data-[state=inactive]:hidden">
+        <SystemLogs messages={messages || []} />
+      </TabsContent>
     </Tabs>
   );
 
   return (
     <div className="h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
-      <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-20 shrink-0">
+      <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-20 shrink-0 relative">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
           <div className="min-w-0 text-left">
             <h1 className="font-display text-sm md:text-lg font-bold text-white truncate">{table.name}</h1>
@@ -288,18 +321,6 @@ export default function EmMesa() {
             </Button>
           )}
 
-          {isMobile && (
-            <Sheet>
-              <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-primary"><Users size={20}/></Button></SheetTrigger>
-              <SheetContent side="right" className="p-0 glass-card w-[85vw] max-w-[320px] border-l border-primary/20 flex flex-col h-full">
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Menu Principal</SheetTitle>
-                  <SheetDescription>Acesse a Party, Chat e as suas Notas.</SheetDescription>
-                </SheetHeader>
-                {renderSidebar()}
-              </SheetContent>
-            </Sheet>
-          )}
           
           <Button variant="ghost" size="sm" onClick={() => navigate("/mesas")} className="text-zinc-500 hover:text-white text-xs">Sair</Button>
         </div>
@@ -307,50 +328,79 @@ export default function EmMesa() {
 
       <div className="flex-1 flex overflow-hidden relative">
         <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black">
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl z-10">
+          
+          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-[0.03] pointer-events-none z-0">
+             <ScrollText size={250} className="text-primary mb-8" />
+             <h2 className="font-display text-4xl md:text-6xl font-bold uppercase tracking-[0.4em] text-center max-w-4xl px-4">
+               {state?.activeScene || "A Lenda Começa"}
+             </h2>
+          </div>
+
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl z-20">
              <div className="bg-primary/20 p-1.5 md:p-2 rounded-full"><Sword size={12} className="text-primary" /></div>
              <div className="flex items-center gap-2 px-1">
                 {table.players?.slice(0, 5).map((p, i) => (
                   <Avatar key={i} className={`h-6 w-6 md:h-8 md:w-8 border ${i === 0 ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 opacity-60'}`}>
-                    <AvatarFallback className="text-[8px] md:text-[10px]">
-                      {p.character?.avatarUrl && p.character?.avatarUrl.length <= 5 ? 
-                          p.character?.avatarUrl : 
-                          p.character?.firstName?.charAt(0).toUpperCase() || "?"
-                        }
+                    <AvatarImage src={p.character?.avatarUrl || undefined} className="object-cover" />
+                    <AvatarFallback className="text-[8px] md:text-[10px] bg-zinc-900">
+                      {p.character?.firstName?.charAt(0).toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                 ))}
              </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center space-y-4 opacity-20 select-none">
-                 <ScrollText size={isMobile ? 80 : 120} className="mx-auto text-primary" />
-                 <h2 className="font-display text-xl md:text-3xl font-bold uppercase tracking-[0.3em]">{state?.activeScene || "Exploração"}</h2>
-              </div>
+          <div className="absolute top-[70px] md:top-[80px] left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center">
+             <span className="text-[9px] uppercase tracking-[0.3em] text-primary/80 font-bold bg-black/40 px-4 py-1 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
+               Cena Atual: {state?.activeScene || "Exploração Livre"}
+             </span>
+          </div>
+
+          <div className="flex-1 w-full h-full relative z-10 overflow-hidden">
+            <ChatStory 
+              messages={messages || []}
+              currentUser={user}
+              currentPlayer={currentPlayerLink}
+              isGM={isGM}
+              onSendMessage={sendMessage}
+              onRollDice={rollDice}
+            />
           </div>
         </main>
 
-        {!isMobile && (
-          <aside className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 border-l border-white/5 bg-zinc-900/30 backdrop-blur-sm flex flex-col h-full relative`}>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="absolute -left-4 top-1/2 -translate-y-1/2 h-8 w-4 bg-zinc-800 border border-white/10 rounded-l flex items-center justify-center text-zinc-500 hover:text-white">
-              {sidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button>
-            {sidebarOpen && renderSidebar()}
-          </aside>
-        )}
-      </div>
+        {/* ✨ BARRA LATERAL UNIFICADA (Mobile e PC) ✨ */}
+        <aside 
+          className={`
+            ${sidebarOpen ? (isMobile ? 'w-[85vw]' : 'w-80') : 'w-0'} 
+            ${isMobile ? 'absolute right-0 h-full z-40' : 'relative h-full z-20'}
+            transition-all duration-300 ease-in-out flex flex-col
+          `}
+        >
+          {/* Fundo dinâmico da barra lateral */}
+          <div className="absolute inset-0 bg-zinc-900/90 backdrop-blur-xl border-l border-white/5 pointer-events-none" />
 
-      <ConfirmDialog 
-        isOpen={!!playerToRemove} 
-        onClose={() => setPlayerToRemove(null)} 
-        onConfirm={() => playerToRemove && handleRemovePlayer(playerToRemove.id)} 
-        title={playerToRemove?.id === currentPlayerLink?.userId ? "Abandonar Sessão?" : "Expulsar Jogador?"}
-        description={playerToRemove?.id === currentPlayerLink?.userId 
-          ? "Tem certeza que deseja abandonar a sessão?" 
-          : `Deseja remover o ${playerToRemove?.name} da partida?`
-        }
-      />
+          {/* ✨ BOTÃO DE TOGGLE BONITÃO E FLUTUANTE */}
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)} 
+            className={`
+              absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-300 z-50 cursor-pointer backdrop-blur-md
+              ${sidebarOpen 
+                ? '-left-4 md:-left-5 h-8 w-8 md:h-10 md:w-10 bg-zinc-800 border border-white/10 rounded-full text-zinc-400 hover:text-white shadow-lg' 
+                : '-left-7 md:-left-8 h-16 md:h-20 w-7 md:w-8 bg-primary/20 border-y border-l border-primary/30 rounded-l-xl text-primary hover:bg-primary/40 shadow-[0_0_15px_rgba(var(--primary),0.3)]'}
+            `}
+          >
+            {sidebarOpen ? <ChevronRight size={18} /> : <Users size={16} />}
+          </button>
+
+          {/* Container de Máscara (Curtain Effect) - Protege o conteúdo durante a animação */}
+          <div className="w-full h-full overflow-hidden relative z-10">
+            {/* O conteúdo da sidebar mantém um tamanho fixo para não amassar, apenas é "cortado" pelo overflow */}
+            <div className="w-[85vw] md:w-80 h-full flex flex-col">
+              {renderSidebar()}
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
