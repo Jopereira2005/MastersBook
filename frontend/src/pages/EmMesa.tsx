@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sheet";
 
 // Componentes Customizados
+import { CampaignDetailsModal } from "@/components/campaign-details-modal";
 import { GMController } from "@/components/gm-controller";
 import { AttributeController } from "@/components/attribute-controller";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -59,7 +60,7 @@ export default function EmMesa() {
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [playerToRemove, setPlayerToRemove] = useState<{id: string, name: string} | null>(null);
-  
+  console.log(table);
   const currentPlayerLink = table?.players?.find(p => p.userId === user?.id);
   const [notesBuffer, setNotesBuffer] = useState("");
 
@@ -74,7 +75,7 @@ export default function EmMesa() {
       const isGM = user.id === table.gmId;
       const isPlayer = table.players?.some(p => p.userId === user.id);
       if (!isGM && !isPlayer) {
-        toast.error("Acesso Negado! Não pertences a esta mesa.");
+        toast.error("Acesso Negado!");
         navigate("/mesas");
       }
     }
@@ -92,18 +93,20 @@ export default function EmMesa() {
   const isGM = user?.id === table.gmId;
   const state = table.state;
 
-  const handleRemovePlayer = async (playerId: string) => {
+  // ✨ FUNÇÃO CORRIGIDA: Agora recebe o targetUserId e não o id da relação
+  const handleRemovePlayer = async (targetUserId: string) => {
     if (!id || !user) return;
     try {
-      await tableService.removePlayer(id, playerId, user.id);
-      if (playerId === currentPlayerLink?.userId || playerId === user.id) {
+      await tableService.removePlayer(id, targetUserId, user.id);
+      
+      if (targetUserId === user.id) {
         toast.success("Você abandonou a mesa.");
         navigate("/mesas");
       } else {
         toast.success("Jogador removido.");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao remover jogador.");
     } finally {
       setPlayerToRemove(null);
     }
@@ -113,17 +116,17 @@ export default function EmMesa() {
     <Tabs defaultValue="party" className="flex-1 flex flex-col h-full w-full overflow-hidden">
       <div className="px-4 pt-4 shrink-0">
         <TabsList className="w-full bg-black/40 border border-white/5 p-1 h-auto flex flex-wrap">
-          <TabsTrigger value="party" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><Users size={14}/> Party</TabsTrigger>
-          <TabsTrigger value="chat" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><MessageSquare size={14}/> Chat</TabsTrigger>
-          <TabsTrigger value="logs" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><Activity size={14}/> Logs</TabsTrigger>
+          <TabsTrigger value="party" className="flex-1 min-w-[60px] text-[10px] md:text-xs gap-1 py-2"><Users size={14}/> Party</TabsTrigger>
+          <TabsTrigger value="chat" className="flex-1 min-w-[60px] text-[10px] md:text-xs gap-1 py-2"><MessageSquare size={14}/> Chat</TabsTrigger>
+          <TabsTrigger value="logs" className="flex-1 min-w-[60px] text-[10px] md:text-xs gap-1 py-2"><Activity size={14}/> Logs</TabsTrigger>
           {currentPlayerLink && (
-            <TabsTrigger value="notes" className="flex-1 min-w-[70px] text-[10px] md:text-xs gap-1 py-2"><ScrollText size={14}/> Notas</TabsTrigger>
+            <TabsTrigger value="notes" className="flex-1 min-w-[60px] text-[10px] md:text-xs gap-1 py-2"><ScrollText size={14}/> Notas</TabsTrigger>
           )}
         </TabsList>
       </div>
 
       <TabsContent value="party" className="flex-1 overflow-hidden flex-col m-0 p-4 data-[state=active]:flex data-[state=inactive]:hidden">
-        <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 shrink-0">Membros da Party</h3>
+        <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 shrink-0 px-1">Membros da Party</h3>
         <ScrollArea className="flex-1 pr-3">
           <div className="space-y-4 pb-10">
             {table.players?.map((player) => {
@@ -134,7 +137,7 @@ export default function EmMesa() {
               return (
                 <div key={player.id} className="group relative p-3 rounded-xl bg-white/5 border border-white/5 space-y-3 transition-all hover:bg-white/10">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-primary/20">
+                    <Avatar className="h-10 w-10 border border-primary/20 shrink-0">
                       <AvatarImage src={player.character?.avatarUrl || undefined} className="object-cover" />
                       <AvatarFallback className="bg-zinc-900 text-primary text-xs">
                         {player.character?.firstName?.charAt(0).toUpperCase() || "?"}
@@ -151,17 +154,18 @@ export default function EmMesa() {
                         onUpdate={updatePlayerStatus} 
                         canEdit={canEdit}
                         onSyncCharacter={syncCharacterAttributes}
-                        isOwner={player.userId === user?.id}
+                        isOwner={isMe}
                       >
                         <Button variant="ghost" size="icon" className={`h-7 w-7 transition-all ${canEdit ? 'text-zinc-400 hover:text-primary' : 'text-zinc-500 hover:text-white opacity-40 group-hover:opacity-100'}`}>
                           {canEdit ? <Settings2 size={12} /> : <ScrollText size={12} />}
                         </Button>
                       </AttributeController>
 
+                      {/* ✨ CORREÇÃO: Enviamos o player.userId! em vez de player.id! */}
                       {isGM && !isMe && (
                         <Button 
                           variant="ghost" size="icon" 
-                          className="h-7 w-7 text-red-500 hover:bg-red-500/10"
+                          className="h-7 w-7 text-red-500/50 hover:text-red-500 hover:bg-red-500/10"
                           onClick={() => setPlayerToRemove({ id: player.userId!, name: player.character?.firstName || "este jogador" })}
                         >
                           <UserMinus size={12} />
@@ -184,15 +188,9 @@ export default function EmMesa() {
                         </div>
                       </div>
                       <div className="relative h-1.5 w-full bg-red-950/30 rounded-full overflow-hidden border border-red-500/10">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" 
-                          style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.hp || 0) / (player.character?.attributes?.hp || 1)) * 100))}%` }} 
-                        />
+                        <div className="absolute h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.hp || 0) / (player.character?.attributes?.hp || 1)) * 100))}%` }} />
                         {player.temporaryAttributes?.tempHp > 0 && (
-                          <div 
-                            className="absolute h-full bg-amber-400/60 transition-all duration-500"
-                            style={{ width: `${Math.min(100, (player.temporaryAttributes.tempHp / (player.character?.attributes?.hp || 1)) * 100)}%` }}
-                          />
+                          <div className="absolute h-full bg-amber-400/60 transition-all duration-500" style={{ width: `${Math.min(100, (player.temporaryAttributes.tempHp / (player.character?.attributes?.hp || 1)) * 100)}%` }} />
                         )}
                       </div>
                     </div>
@@ -203,17 +201,15 @@ export default function EmMesa() {
                         <span>{player.currentAttributes?.mana || 0} / {player.character?.attributes?.mana || 1}</span>
                       </div>
                       <div className="h-1.5 w-full bg-cyan-950/30 rounded-full overflow-hidden border border-cyan-500/10">
-                        <div 
-                          className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" 
-                          style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.mana || 0) / (player.character?.attributes?.mana || 1)) * 100))}%` }} 
-                        />
+                        <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.mana || 0) / (player.character?.attributes?.mana || 1)) * 100))}%` }} />
                       </div>
                     </div>
 
                     {player.currentAttributes && (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         {Object.entries(player.currentAttributes)
-                          .filter(([key]) => !baseKeys.includes(key))
+                          // ✨ CORREÇÃO: Ignoramos as chaves base e também qualquer Objeto!
+                          .filter(([key, value]) => !baseKeys.includes(key) && typeof value !== 'object' && value !== null)
                           .map(([key, value]) => (
                             <div key={key} className="flex flex-col bg-black/20 rounded px-2 py-1 border border-white/5">
                               <span className="text-[7px] text-zinc-500 uppercase font-black truncate">{key}</span>
@@ -226,9 +222,7 @@ export default function EmMesa() {
                     {player.conditions && player.conditions.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
                         {player.conditions.map((cond, idx) => (
-                          <Badge key={idx} variant="outline" className="bg-red-950/30 text-red-400 border-red-500/20 text-[8px] uppercase px-1.5 py-0">
-                            {cond}
-                          </Badge>
+                          <Badge key={idx} variant="outline" className="bg-red-950/30 text-red-400 border-red-500/20 text-[8px] uppercase px-1.5 py-0">{cond}</Badge>
                         ))}
                       </div>
                     )}
@@ -276,13 +270,20 @@ export default function EmMesa() {
   );
 
   return (
-    <div className="h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
-      <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-20 shrink-0 relative">
+    <div className="h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden relative">
+      <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-30 shrink-0 relative">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
-          <div className="min-w-0 text-left">
-            <h1 className="font-display text-sm md:text-lg font-bold text-white truncate">{table.name}</h1>
-            <p className="text-[8px] md:text-[10px] uppercase tracking-wider text-primary font-bold">{table.system?.name}</p>
-          </div>
+          <CampaignDetailsModal table={table}>
+            <div className="min-w-0 text-left">
+              <h1 className="font-display text-sm md:text-lg font-bold text-white truncate group-hover:text-primary transition-colors">
+                {table.name}
+              </h1>
+              <p className="text-[8px] md:text-[10px] uppercase tracking-wider text-primary font-bold">
+                {table.system?.name}
+              </p>
+            </div>
+          </CampaignDetailsModal>
+
           <Separator orientation="vertical" className="h-8 bg-zinc-800 hidden xs:block" />
           <div className="hidden lg:flex items-center gap-5">
             <div className="flex items-center gap-2 text-zinc-400"><MapPin size={12} /><span className="text-[10px]">{state?.currentLocation || "Local Desconhecido"}</span></div>
@@ -302,7 +303,7 @@ export default function EmMesa() {
               <SheetContent className="glass-card border-l border-primary/20 w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6 text-left">
                   <SheetTitle className="font-display text-2xl gradient-text flex items-center gap-2"><ThermometerSun className="text-primary" /> Mundo</SheetTitle>
-                  <SheetDescription className="sr-only">Painel de controle do mestre da mesa.</SheetDescription>
+                  <SheetDescription className="sr-only">Painel de controle do mestre.</SheetDescription>
                 </SheetHeader>
                 <GMController initialState={table.state} onUpdate={updateState} />
               </SheetContent>
@@ -314,20 +315,18 @@ export default function EmMesa() {
               variant="ghost" 
               size="sm" 
               className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-bold gap-1 h-8 px-2"
-              onClick={() => setPlayerToRemove({ id: currentPlayerLink.userId!, name: "esta mesa permanentemente" })}
+              onClick={() => setPlayerToRemove({ id: user!.id, name: "esta mesa" })}
             >
               <LogOut size={14} />
-              <span className="hidden sm:inline">Abandonar Mesa</span>
+              <span className="hidden sm:inline">Abandonar</span>
             </Button>
           )}
-
-          
           <Button variant="ghost" size="sm" onClick={() => navigate("/mesas")} className="text-zinc-500 hover:text-white text-xs">Sair</Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden relative">
-        <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black">
+        <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black overflow-hidden">
           
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-[0.03] pointer-events-none z-0">
              <ScrollText size={250} className="text-primary mb-8" />
@@ -368,7 +367,6 @@ export default function EmMesa() {
           </div>
         </main>
 
-        {/* ✨ BARRA LATERAL UNIFICADA (Mobile e PC) ✨ */}
         <aside 
           className={`
             ${sidebarOpen ? (isMobile ? 'w-[85vw]' : 'w-80') : 'w-0'} 
@@ -376,31 +374,38 @@ export default function EmMesa() {
             transition-all duration-300 ease-in-out flex flex-col
           `}
         >
-          {/* Fundo dinâmico da barra lateral */}
-          <div className="absolute inset-0 bg-zinc-900/90 backdrop-blur-xl border-l border-white/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 pointer-events-none shadow-2xl" />
 
-          {/* ✨ BOTÃO DE TOGGLE BONITÃO E FLUTUANTE */}
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)} 
             className={`
-              absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-300 z-50 cursor-pointer backdrop-blur-md
+              absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-500 z-50 cursor-pointer
               ${sidebarOpen 
-                ? '-left-4 md:-left-5 h-8 w-8 md:h-10 md:w-10 bg-zinc-800 border border-white/10 rounded-full text-zinc-400 hover:text-white shadow-lg' 
-                : '-left-7 md:-left-8 h-16 md:h-20 w-7 md:w-8 bg-primary/20 border-y border-l border-primary/30 rounded-l-xl text-primary hover:bg-primary/40 shadow-[0_0_15px_rgba(var(--primary),0.3)]'}
+                ? '-left-4 h-9 w-9 bg-zinc-800 border border-white/10 rounded-full text-zinc-400 hover:text-white shadow-xl rotate-0' 
+                : '-left-8 h-20 w-8 bg-primary/20 border-y border-l border-primary/30 rounded-l-2xl text-primary hover:bg-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.2)]'}
             `}
           >
-            {sidebarOpen ? <ChevronRight size={18} /> : <Users size={16} />}
+            {sidebarOpen ? <ChevronRight size={20} className="mr-0.5" /> : <Users size={18} className="ml-1" />}
           </button>
 
-          {/* Container de Máscara (Curtain Effect) - Protege o conteúdo durante a animação */}
           <div className="w-full h-full overflow-hidden relative z-10">
-            {/* O conteúdo da sidebar mantém um tamanho fixo para não amassar, apenas é "cortado" pelo overflow */}
             <div className="w-[85vw] md:w-80 h-full flex flex-col">
               {renderSidebar()}
             </div>
           </div>
         </aside>
       </div>
+
+      <ConfirmDialog 
+        isOpen={!!playerToRemove} 
+        onClose={() => setPlayerToRemove(null)} 
+        onConfirm={() => playerToRemove && handleRemovePlayer(playerToRemove.id)} 
+        title={playerToRemove?.id === user?.id ? "Abandonar Sessão?" : "Expulsar Jogador?"}
+        description={playerToRemove?.id === user?.id 
+          ? "Tens a certeza que desejas abandonar esta jornada?" 
+          : `Deseja remover ${playerToRemove?.name} desta aventura permanentemente?`
+        }
+      />
     </div>
   );
 }
