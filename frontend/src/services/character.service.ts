@@ -54,7 +54,7 @@ export const characterService = {
     }
   },
 
-  async update(characterId: string, data: Partial<ICharacter>): Promise<ICharacter> {
+  async update(characterId: string, data: Partial<ICharacter>): Promise<{ character: ICharacter }> {
     try {
       const response = await api.patch(`/characters/update/${characterId}`, data);
       return response.data;

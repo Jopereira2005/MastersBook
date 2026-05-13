@@ -180,7 +180,7 @@ export function useGameSession(tableId: string | undefined) {
           ...prev,
           players: prev.players.map(p => 
             p.characterId === characterId 
-              ? { ...p, character: updatedCharacter } 
+              ? { ...p, character: updatedCharacter.character } 
               : p
           )
         };

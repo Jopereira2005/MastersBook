@@ -55,7 +55,11 @@ export function AttributeController({ player, onUpdate, onSyncCharacter, isOwner
         inteligencia: current.inteligencia ?? maxAttr.inteligencia ?? 10,
         sabedoria: current.sabedoria ?? maxAttr.sabedoria ?? 10,
         carisma: current.carisma ?? maxAttr.carisma ?? 10,
-        ...Object.fromEntries(Object.entries(current).filter(([key]) => !["hp", "mana", "mp", "level", ...baseKeys].includes(key)))
+        ...Object.fromEntries(
+          Object.entries(current).filter(([key, value]) => 
+            !["hp", "mana", "mp", "level", ...baseKeys].includes(key) && typeof value !== 'object' && value !== null
+          )
+        )
       });
 
       setTempForm({
@@ -93,7 +97,6 @@ export function AttributeController({ player, onUpdate, onSyncCharacter, isOwner
     setForm(prev => ({ ...prev, [field]: currentVal + amount }));
   };
 
-  // ✨ NOVA FUNÇÃO: Adicionar recurso extra com segurança
   const handleAddCustomResource = () => {
     const key = customKey.trim().toLowerCase();
     if (!key) return;
@@ -290,19 +293,19 @@ export function AttributeController({ player, onUpdate, onSyncCharacter, isOwner
                   <h4 className="text-[10px] uppercase text-primary font-black tracking-widest">Recursos Extras</h4>
                   {canEdit && (
                     <div className="flex gap-2">
-                      {/* ✨ INPUT COM EVENTO ONKEYDOWN PARA SALVAR COM ENTER ✨ */}
                       <Input 
                         value={customKey} 
                         onChange={(e) => setCustomKey(e.target.value)} 
                         onKeyDown={(e) => e.key === 'Enter' && handleAddCustomResource()}
-                        placeholder="Nome: Ex: Chi..." 
+                        placeholder="Ex: Aura..." 
                         className="bg-zinc-900 border-primary/20 text-xs h-9 flex-1" 
                       />
                       <Button type="button" onClick={handleAddCustomResource} className="h-9 w-9 bg-primary/10 border-primary/20 text-primary" variant="outline"><Plus size={16}/></Button>
                     </div>
                   )}
                   <div className="space-y-2">
-                    {Object.entries(form).filter(([k]) => !["hp", "mana", "mp", "level", ...baseKeys].includes(k)).map(([key, val]) => (
+                    {Object.entries(form).filter(([k, v]) => !["hp", "mana", "mp", "level", ...baseKeys].includes(k) && typeof v !== 'object' && v !== null)
+                      .map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between bg-black/30 p-2 px-3 rounded-md border border-white/5 group">
                         <span className="text-[10px] text-zinc-400 font-bold uppercase truncate pr-2">{key}</span>
                         <div className="flex items-center gap-2">
@@ -343,7 +346,7 @@ export function AttributeController({ player, onUpdate, onSyncCharacter, isOwner
               {canEdit && (
                 <Button onClick={handleSave} disabled={loading} className="flex-1 md:flex-none bg-gradient-primary text-white font-bold min-w-[120px] md:min-w-[140px] h-10 md:h-9">
                   {loading ? <Loader2 className="animate-spin mr-2" size={16}/> : <Save size={16} className="mr-2"/>}
-                  Salvar Mesa
+                  Salvar
                 </Button>
               )}
             </div>
