@@ -95,5 +95,3 @@ cp .env.example .env
 npm run dev
 # O app estará disponível em http://localhost:5173
 ```
-
-📄 Configuração do .env
