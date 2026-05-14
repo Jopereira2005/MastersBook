@@ -62,7 +62,7 @@ export const AppSidebar = () => {
             { user?.avatarUrl && user?.avatarUrl.length <= 5 ? (
               <span className="text-base leading-none">{ user?.avatarUrl || 'U' }</span>
             ) : (
-              <span className="text-xs">{user?.firstName.charAt(0).toUpperCase() + user?.lastName.charAt(0).toUpperCase() || 'Aventureiro'}</span>
+              <span className="text-xs">{user?.firstName.charAt(0).toUpperCase() + user?.lastName.charAt(0).toUpperCase() || 'U'}</span>
             )}
           </div>
           <div className="min-w-0 flex-1">

@@ -94,8 +94,13 @@ export function CampaignDetailsModal({ table, children }: CampaignDetailsModalPr
               {/* O Mestre em destaque */}
               <div className="bg-primary/5 border border-primary/20 p-3 rounded-xl flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-primary/40 ring-2 ring-primary/20">
-                  <AvatarImage src={table.gm?.avatarUrl || undefined} className="object-cover" />
-                  <AvatarFallback className="bg-zinc-900 text-primary font-bold">GM</AvatarFallback>
+                  <AvatarFallback className="bg-zinc-900 text-primary font-bold">
+                    {
+                      table.gm?.avatarUrl && table.gm?.avatarUrl?.length <= 5 ?
+                          table.gm?.avatarUrl :
+                          table.gm?.firstName?.charAt(0).toUpperCase() || "U"
+                    }
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-xs font-black text-white uppercase tracking-tighter">{table.gm?.username}</p>

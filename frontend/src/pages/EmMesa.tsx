@@ -4,7 +4,8 @@ import {
   Loader2, MapPin, Calendar, Cloud, Users, 
   ChevronRight, Sword, ScrollText, 
   Settings2, MessageSquare, ThermometerSun, Save,
-  Heart, Zap, UserMinus, LogOut, Activity
+  Heart, Zap, UserMinus, LogOut, Activity,
+  Globe2
 } from "lucide-react";
 
 // Hooks e Contextos
@@ -14,7 +15,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 // Componentes UI
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -35,6 +35,7 @@ import { ChatOOC } from "@/components/chat-ooc";
 import { SystemLogs } from "@/components/system-logs";
 import { tableService } from "@/services/table.service";
 import { toast } from "sonner";
+import { TableStates } from "@/components/table-states";
 
 export default function EmMesa() {
   const { id } = useParams<{ id: string }>();
@@ -60,7 +61,7 @@ export default function EmMesa() {
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [playerToRemove, setPlayerToRemove] = useState<{id: string, name: string} | null>(null);
-  console.log(table);
+  
   const currentPlayerLink = table?.players?.find(p => p.userId === user?.id);
   const [notesBuffer, setNotesBuffer] = useState("");
 
@@ -93,7 +94,6 @@ export default function EmMesa() {
   const isGM = user?.id === table.gmId;
   const state = table.state;
 
-  // ✨ FUNÇÃO CORRIGIDA: Agora recebe o targetUserId e não o id da relação
   const handleRemovePlayer = async (targetUserId: string) => {
     if (!id || !user) return;
     try {
@@ -140,7 +140,11 @@ export default function EmMesa() {
                     <Avatar className="h-10 w-10 border border-primary/20 shrink-0">
                       <AvatarImage src={player.character?.avatarUrl || undefined} className="object-cover" />
                       <AvatarFallback className="bg-zinc-900 text-primary text-xs">
-                        {player.character?.firstName?.charAt(0).toUpperCase() || "?"}
+                        { 
+                        player.character?.avatarUrl && player.character?.avatarUrl.length <= 5 ?
+                          player.character?.avatarUrl :
+                          player.character?.firstName?.charAt(0).toUpperCase() || "U"
+                        }
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 text-left">
@@ -161,7 +165,6 @@ export default function EmMesa() {
                         </Button>
                       </AttributeController>
 
-                      {/* ✨ CORREÇÃO: Enviamos o player.userId! em vez de player.id! */}
                       {isGM && !isMe && (
                         <Button 
                           variant="ghost" size="icon" 
@@ -208,7 +211,6 @@ export default function EmMesa() {
                     {player.currentAttributes && (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         {Object.entries(player.currentAttributes)
-                          // ✨ CORREÇÃO: Ignoramos as chaves base e também qualquer Objeto!
                           .filter(([key, value]) => !baseKeys.includes(key) && typeof value !== 'object' && value !== null)
                           .map(([key, value]) => (
                             <div key={key} className="flex flex-col bg-black/20 rounded px-2 py-1 border border-white/5">
@@ -274,7 +276,7 @@ export default function EmMesa() {
       <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-30 shrink-0 relative">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
           <CampaignDetailsModal table={table}>
-            <div className="min-w-0 text-left">
+            <div className="min-w-0 text-left hover:bg-white/5 p-1.5 rounded-md transition-colors border border-transparent hover:border-white/10">
               <h1 className="font-display text-sm md:text-lg font-bold text-white truncate group-hover:text-primary transition-colors">
                 {table.name}
               </h1>
@@ -283,13 +285,6 @@ export default function EmMesa() {
               </p>
             </div>
           </CampaignDetailsModal>
-
-          <Separator orientation="vertical" className="h-8 bg-zinc-800 hidden xs:block" />
-          <div className="hidden lg:flex items-center gap-5">
-            <div className="flex items-center gap-2 text-zinc-400"><MapPin size={12} /><span className="text-[10px]">{state?.currentLocation || "Local Desconhecido"}</span></div>
-            <div className="flex items-center gap-2 text-zinc-400"><Calendar size={12} /><span className="text-[10px]">{state?.inGameDate || "Data Incerta"}</span></div>
-            <div className="flex items-center gap-2 text-zinc-400"><Cloud size={12} /><span className="text-[10px] capitalize">{state?.weather || "Céu Limpo"}</span></div>
-          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -321,6 +316,18 @@ export default function EmMesa() {
               <span className="hidden sm:inline">Abandonar</span>
             </Button>
           )}
+
+          {isMobile && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={`transition-colors z-50 ${sidebarOpen ? 'text-white' : 'text-primary'}`} 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <Users size={20}/>
+            </Button>
+          )}
+          
           <Button variant="ghost" size="sm" onClick={() => navigate("/mesas")} className="text-zinc-500 hover:text-white text-xs">Sair</Button>
         </div>
       </header>
@@ -328,31 +335,54 @@ export default function EmMesa() {
       <div className="flex-1 flex overflow-hidden relative">
         <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black overflow-hidden">
           
-          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-[0.03] pointer-events-none z-0">
+          {/* ✨ BARRA DE AVENTURA (NOVA SEÇÃO ANTES DA HISTÓRIA) ✨ */}
+          <div className="z-20 w-full bg-zinc-950/80 backdrop-blur-md border-b border-white/5 p-2 md:p-3 flex flex-col md:flex-row items-center justify-between gap-3 shrink-0 shadow-lg">
+            
+            {/* 1. Esquerda: Botão do Mundo (Modal de Estado) */}
+            <div className="w-full md:w-auto flex justify-center md:justify-start shrink-0">
+              <TableStates state={state}>
+                <Button variant="outline" className="bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary gap-2 text-[10px] uppercase tracking-widest font-bold h-8 w-full md:w-auto">
+                  <Globe2 size={14} />
+                  Mundo & Notas
+                </Button>
+              </TableStates>
+            </div>
+
+            {/* 2. Centro: Ordem de Turno / Iniciativa com SCROLL HORIZONTAL ✨ */}
+            {/* 🐛 CORREÇÃO AQUI: Removido o 'overflow-hidden' que estava a cortar e adicionado 'py-1' na div interna */}
+            <div className="flex items-center gap-2 bg-black/60 px-2 py-1 rounded-full border border-white/5 shadow-inner w-full md:max-w-md">
+               <div className="bg-primary/20 p-1.5 rounded-full shrink-0"><Sword size={14} className="text-primary" /></div>
+               
+               {/* Usamos overflow-x-auto e shrink-0 para evitar cortes nos avatares, e um pequeno py-1 para dar espaço à borda ring-2 */}
+               <div className="flex items-center gap-2 px-1 py-1 overflow-x-auto custom-scrollbar flex-1">
+                  {table.players?.map((p, i) => (
+                    <Avatar key={i} className={`h-7 w-7 md:h-8 md:w-8 border shrink-0 ${i === 0 ? 'border-primary ring-2 ring-primary/50 shadow-glow' : 'border-white/10 opacity-60 hover:opacity-100 transition-opacity cursor-pointer'}`}>
+                      <AvatarFallback className="text-[9px] md:text-[10px] bg-zinc-900">
+                        { 
+                        p.character?.avatarUrl && p.character?.avatarUrl.length <= 5 ?
+                          p.character?.avatarUrl :
+                          p.character?.firstName?.charAt(0).toUpperCase() || "U"
+                        }
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+               </div>
+            </div>
+
+            {/* 3. Direita: Cena Atual */}
+            <div className="w-full md:w-auto flex justify-center md:justify-end shrink-0 sm:flex">
+               <Badge variant="outline" className="bg-black/40 border-primary/30 text-primary/80 text-[9px] uppercase tracking-[0.2em] py-1 truncate max-w-[200px]">
+                 {state?.activeScene || "Exploração Livre"}
+               </Badge>
+            </div>
+          </div>
+
+          {/* Marca d'água da Cena (Fundo) */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-[0.03] pointer-events-none z-0 mt-14">
              <ScrollText size={250} className="text-primary mb-8" />
              <h2 className="font-display text-4xl md:text-6xl font-bold uppercase tracking-[0.4em] text-center max-w-4xl px-4">
                {state?.activeScene || "A Lenda Começa"}
              </h2>
-          </div>
-
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl z-20">
-             <div className="bg-primary/20 p-1.5 md:p-2 rounded-full"><Sword size={12} className="text-primary" /></div>
-             <div className="flex items-center gap-2 px-1">
-                {table.players?.slice(0, 5).map((p, i) => (
-                  <Avatar key={i} className={`h-6 w-6 md:h-8 md:w-8 border ${i === 0 ? 'border-primary ring-2 ring-primary/50' : 'border-white/10 opacity-60'}`}>
-                    <AvatarImage src={p.character?.avatarUrl || undefined} className="object-cover" />
-                    <AvatarFallback className="text-[8px] md:text-[10px] bg-zinc-900">
-                      {p.character?.firstName?.charAt(0).toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-             </div>
-          </div>
-
-          <div className="absolute top-[70px] md:top-[80px] left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center">
-             <span className="text-[9px] uppercase tracking-[0.3em] text-primary/80 font-bold bg-black/40 px-4 py-1 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
-               Cena Atual: {state?.activeScene || "Exploração Livre"}
-             </span>
           </div>
 
           <div className="flex-1 w-full h-full relative z-10 overflow-hidden">
