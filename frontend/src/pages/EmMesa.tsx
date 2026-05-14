@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/sheet";
 
 // Componentes Customizados
-import { CampaignDetailsModal } from "@/components/campaign-details-modal";
+import { CampaignDetails } from "@/components/campaign-details";
 import { GMController } from "@/components/gm-controller";
 import { AttributeController } from "@/components/attribute-controller";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -275,7 +275,7 @@ export default function EmMesa() {
     <div className="h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden relative">
       <header className="h-16 border-b border-primary/20 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-30 shrink-0 relative">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
-          <CampaignDetailsModal table={table}>
+          <CampaignDetails table={table}>
             <div className="min-w-0 text-left hover:bg-white/5 p-1.5 rounded-md transition-colors border border-transparent hover:border-white/10">
               <h1 className="font-display text-sm md:text-lg font-bold text-white truncate group-hover:text-primary transition-colors">
                 {table.name}
@@ -284,7 +284,7 @@ export default function EmMesa() {
                 {table.system?.name}
               </p>
             </div>
-          </CampaignDetailsModal>
+          </CampaignDetails>
         </div>
 
         <div className="flex items-center gap-2">
