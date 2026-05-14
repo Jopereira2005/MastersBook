@@ -152,7 +152,6 @@ export default function EmMesa() {
                 <div key={player.id} className="group relative p-3 rounded-xl bg-white/5 border border-white/5 space-y-3 transition-all hover:bg-white/10">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border border-primary/20 shrink-0">
-                      <AvatarImage src={player.character?.avatarUrl || undefined} className="object-cover" />
                       <AvatarFallback className="bg-zinc-900 text-primary text-xs">
                         { 
                         player.character?.avatarUrl && player.character?.avatarUrl.length <= 5 ?
@@ -373,9 +372,13 @@ export default function EmMesa() {
                             <div className="absolute inset-0 bg-red-500 rounded-full animate-pulse opacity-40 blur-sm" />
                           )}
                           <Avatar className={`relative h-7 w-7 md:h-8 md:w-8 transition-all duration-300 ${isTurn ? 'border-2 border-red-500 z-10' : 'border border-white/10 opacity-50 grayscale-[50%] hover:grayscale-0 hover:opacity-100 cursor-pointer'}`}>
-                            <AvatarImage src={p.character?.avatarUrl || undefined} className="object-cover" />
                             <AvatarFallback className="text-[9px] md:text-[10px] bg-zinc-900 font-bold text-white">
                               {p.character?.firstName?.charAt(0).toUpperCase() || "?"}
+                              { 
+                              p.character?.avatarUrl && p.character?.avatarUrl.length <= 5 ?
+                                p.character?.avatarUrl :
+                                p.character?.firstName?.charAt(0).toUpperCase() || "U"
+                              }
                             </AvatarFallback>
                           </Avatar>
                         </div>
