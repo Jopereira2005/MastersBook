@@ -509,6 +509,9 @@ export class TableController {
       if (data.weather) logText = `O clima mudou repentinamente para: ${data.weather}.`;
       if (data.activeScene) logText = `A cena mudou para: ${data.activeScene === 'COMBAT' ? '⚔️ Combate!' : 'Exploração'}.`;
       if (data.currentLocation) logText = `O grupo viajou para: ${data.currentLocation}.`;
+      if (data.inGameDate) logText = `A data no mundo em que o grupo se encontra é: ${data.inGameDate}.`;
+      if (data.isCombatActive === true) logText = "⚔️ **O Combate Começou!** (Salvo via painel do Mestre).";
+      if (data.isCombatActive === false) logText = "🛡️ **O Combate terminou.**";
 
       // Busca rápida para descobrir quem é o GM desta mesa
       const table = await prisma.table.findUnique({

@@ -71,8 +71,11 @@ export const updateTableStateSchema = z.object({
     inGameDate: z.string().optional(),
     weather: z.string().optional(),
     activeScene: z.string().optional(),
-    initiativeOrder: z.any().optional(), // Aceita o array JSON da iniciativa
     publicNotes: z.string().optional(),
+
+    isCombatActive: z.boolean().optional(),
+    turnOrder: z.array(z.string()).optional(),
+    currentTurn: z.number().int().min(0).optional(),
   }),
 });
 

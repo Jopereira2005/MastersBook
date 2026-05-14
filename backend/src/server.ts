@@ -93,6 +93,87 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ==========================================
+  // MOTOR DE COMBATE: Iniciar/Parar Combate
+  // ==========================================
+  socket.on('toggle_combat', async (data: { tableId: string, isActive: boolean, turnOrder: string[] }) => {
+    try {
+      // 1. Atualiza o Estado da Mesa
+      const updatedState = await prisma.tableState.upsert({
+        where: { tableId: data.tableId },
+        update: {
+          isCombatActive: data.isActive,
+          turnOrder: data.isActive ? data.turnOrder : [],
+          currentTurn: 0 // Zera o turno
+        },
+        create: {
+          tableId: data.tableId,
+          isCombatActive: data.isActive,
+          turnOrder: data.isActive ? data.turnOrder : [],
+          currentTurn: 0
+        }
+      });
+
+      // 2. Avisa o Frontend para atualizar o visual da mesa (abrir o Tracker de Iniciativa)
+      io.to(data.tableId).emit('state_updated', updatedState);
+
+      // 3. Cria a mensagem de LOG para o Chat
+      const table = await prisma.table.findUnique({ where: { id: data.tableId }, select: { gmId: true } });
+      
+      if (table) {
+        const logContent = data.isActive ? "⚔️ **O Combate Começou!** Preparem-se." : "🛡️ **O Combate terminou.** A poeira baixa.";
+        
+        const logMessage = await prisma.message.create({
+          data: {
+            tableId: data.tableId,
+            userId: table.gmId, // Usamos o ID do mestre como o autor do aviso de sistema
+            content: logContent,
+            type: 'LOG'
+          },
+          include: {
+            user: { select: { username: true, avatarUrl: true } },
+            character: { select: { firstName: true, avatarUrl: true } }
+          }
+        });
+
+        // 4. Dispara a nova mensagem para o chat de todo o mundo
+        io.to(data.tableId).emit('new_message', logMessage);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao alternar estado do combate:', error);
+    }
+  });
+
+  // ==========================================
+  // MOTOR DE COMBATE: Passar o Turno
+  // ==========================================
+  socket.on('next_turn', async (data: { tableId: string }) => {
+    try {
+      // 1. Busca o estado atual
+      const state = await prisma.tableState.findUnique({
+        where: { tableId: data.tableId }
+      });
+
+      // 2. Verifica se o combate está ativo e se existe ordem de turnos
+      if (state && state.isCombatActive && state.turnOrder && state.turnOrder.length > 0) {
+        
+        // 3. A matemática perfeita do Next Index usando Módulo
+        const nextIndex = (state.currentTurn + 1) % state.turnOrder.length;
+
+        // 4. Atualiza o banco
+        const updatedState = await prisma.tableState.update({
+          where: { tableId: data.tableId },
+          data: { currentTurn: nextIndex }
+        });
+
+        // 5. Avisa todos que o turno mudou (O Frontend pisca o card do próximo jogador)
+        io.to(data.tableId).emit('state_updated', updatedState);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao passar o turno:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log(`🔴 [Socket] Cliente desconectado: ${socket.id}`);
   });

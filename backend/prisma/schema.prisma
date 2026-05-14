@@ -140,8 +140,11 @@ model TableState {
   inGameDate      String? @map("in_game_date")
   weather         String?
   activeScene     String  @default("EXPLORATION") @map("active_scene")
-  initiativeOrder Json?   @map("initiative_order")
   publicNotes     String? @map("public_notes")
+
+  isCombatActive  Boolean  @default(false) @map("is_combat_active")
+  turnOrder       String[] @map("turn_order")
+  currentTurn     Int      @default(0)     @map("current_turn")
 
   tableId String @unique @map("table_id")
   table   Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
