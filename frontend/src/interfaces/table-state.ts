@@ -7,13 +7,14 @@ export interface ITableState {
   inGameDate?: string | null;
   weather?: string | null;
   activeScene?: string; // Ex: "EXPLORATION", "COMBAT"
-  
-  // A ordem de iniciativa guarda os turnos (Ex: [{ name: "Goblin", roll: 15 }])
-  initiativeOrder?: Record<string, any>[] | null; 
-  
+
+  initiativeOrder?: Record<string, any>[] | null;  
   publicNotes?: string | null;
 
-  // Relação 1-para-1 com a Mesa
+  isCombatActive?: boolean;
+  turnOrder?: string[];
+  currentTurn?: number;
+
   tableId?: string;
   table?: ITable;
 }

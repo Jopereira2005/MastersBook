@@ -243,6 +243,16 @@ export function useGameSession(tableId: string | undefined) {
     }
   };
 
+  const toggleCombat = (isActive: boolean, turnOrder: string[]) => {
+    if (!socket || !tableId) return;
+    socket.emit("toggle_combat", { tableId: tableId, isActive, turnOrder });
+  };
+
+  const nextTurn = () => {
+    if (!socket || !tableId) return;
+    socket.emit("next_turn", { tableId: tableId });
+  };
+
   return { 
     data, 
     loading, 
@@ -252,10 +262,12 @@ export function useGameSession(tableId: string | undefined) {
     updatePlayerNotes,
     sendMessage, 
     rollDice,
-    loadMoreMessages, // Exportado
-    hasMoreMessages,  // Exportado
-    editMessage,      // Exportado
-    deleteMessage,    // Exportado
-    syncCharacterAttributes
+    loadMoreMessages,
+    hasMoreMessages, 
+    editMessage,     
+    deleteMessage,
+    syncCharacterAttributes,
+    toggleCombat, 
+    nextTurn
   };
 }

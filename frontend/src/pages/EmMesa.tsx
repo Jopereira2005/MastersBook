@@ -56,7 +56,9 @@ export default function EmMesa() {
     hasMoreMessages,
     editMessage,
     deleteMessage,
-    syncCharacterAttributes
+    syncCharacterAttributes,
+    toggleCombat,
+    nextTurn
   } = useGameSession(id);
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -64,7 +66,7 @@ export default function EmMesa() {
   
   const currentPlayerLink = table?.players?.find(p => p.userId === user?.id);
   const [notesBuffer, setNotesBuffer] = useState("");
-
+  console.log(table)
   useEffect(() => {
     if (currentPlayerLink) {
       setNotesBuffer(currentPlayerLink.privateNotes || "");
@@ -133,6 +135,18 @@ export default function EmMesa() {
               const isMe = player.userId === user?.id;
               const canEdit = isGM || isMe; 
               const baseKeys = ["hp", "mana", "mp", "forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma", "level"];
+              const charAttr = player.currentAttributes || { hp: 10, mana: 10 };
+              const maxHp = Number(charAttr.hp) || 10;
+              const maxMana = Number(charAttr.mana) || Number(charAttr.mp) || 10;
+              
+              const currentHp = player.currentAttributes?.hp !== undefined ? Number(player.currentAttributes.hp) : maxHp;
+              const currentMana = player.currentAttributes?.mana !== undefined ? Number(player.currentAttributes.mana) : maxMana;
+              const tempHp = Number(player.temporaryAttributes?.tempHp) || 0;
+              const level = player.currentAttributes?.level ?? player.character?.level ?? 1;
+
+              const hpPercent = Math.min(100, Math.max(0, (currentHp / maxHp) * 100));
+              const tempHpPercent = Math.min(100, (tempHp / maxHp) * 100);
+              const manaPercent = Math.min(100, Math.max(0, (currentMana / maxMana) * 100));
 
               return (
                 <div key={player.id} className="group relative p-3 rounded-xl bg-white/5 border border-white/5 space-y-3 transition-all hover:bg-white/10">
@@ -149,7 +163,7 @@ export default function EmMesa() {
                     </Avatar>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-xs font-bold text-white truncate">{player.character?.firstName} {isMe && "(Você)"}</p>
-                      <p className="text-[10px] text-zinc-500 uppercase truncate">{player.character?.class} • Lvl {player.currentAttributes?.level ?? player.character?.level ?? 1}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase truncate">{player.character?.class} • Lvl {level}</p>
                     </div>
                     
                     <div className="flex items-center gap-1">
@@ -182,18 +196,14 @@ export default function EmMesa() {
                       <div className="flex justify-between text-[9px] uppercase font-bold">
                         <span className="flex items-center gap-1 text-red-400/80"><Heart size={8}/> Vida</span>
                         <div className="flex gap-2">
-                          {player.temporaryAttributes?.tempHp > 0 && (
-                            <span className="text-amber-400">+{player.temporaryAttributes.tempHp} Escudo</span>
-                          )}
-                          <span className="text-zinc-300">
-                            {player.currentAttributes?.hp || 0} / {player.character?.attributes?.hp || 1}
-                          </span>
+                          {tempHp > 0 && <span className="text-amber-400">+{tempHp} Escudo</span>}
+                          <span className="text-zinc-300">{currentHp} / {maxHp}</span>
                         </div>
                       </div>
                       <div className="relative h-1.5 w-full bg-red-950/30 rounded-full overflow-hidden border border-red-500/10">
-                        <div className="absolute h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.hp || 0) / (player.character?.attributes?.hp || 1)) * 100))}%` }} />
-                        {player.temporaryAttributes?.tempHp > 0 && (
-                          <div className="absolute h-full bg-amber-400/60 transition-all duration-500" style={{ width: `${Math.min(100, (player.temporaryAttributes.tempHp / (player.character?.attributes?.hp || 1)) * 100)}%` }} />
+                        <div className="absolute h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style={{ width: `${hpPercent}%` }} />
+                        {tempHp > 0 && (
+                          <div className="absolute h-full bg-amber-400/60 transition-all duration-500" style={{ width: `${tempHpPercent}%` }} />
                         )}
                       </div>
                     </div>
@@ -201,10 +211,10 @@ export default function EmMesa() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-[9px] uppercase font-bold text-cyan-400/80">
                         <span className="flex items-center gap-1"><Zap size={8}/> Mana</span>
-                        <span>{player.currentAttributes?.mana || 0} / {player.character?.attributes?.mana || 1}</span>
+                        <span>{currentMana} / {maxMana}</span>
                       </div>
                       <div className="h-1.5 w-full bg-cyan-950/30 rounded-full overflow-hidden border border-cyan-500/10">
-                        <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" style={{ width: `${Math.min(100, Math.max(0, ((player.currentAttributes?.mana || 0) / (player.character?.attributes?.mana || 1)) * 100))}%` }} />
+                        <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-700 shadow-[0_0_8px_rgba(34,211,238,0.4)]" style={{ width: `${manaPercent}%` }} />
                       </div>
                     </div>
 
@@ -300,7 +310,13 @@ export default function EmMesa() {
                   <SheetTitle className="font-display text-2xl gradient-text flex items-center gap-2"><ThermometerSun className="text-primary" /> Mundo</SheetTitle>
                   <SheetDescription className="sr-only">Painel de controle do mestre.</SheetDescription>
                 </SheetHeader>
-                <GMController initialState={table.state} onUpdate={updateState} />
+                <GMController 
+                  initialState={table.state} 
+                  players={table.players || []}
+                  onUpdate={updateState} 
+                  onToggleCombat={toggleCombat}
+                  onNextTurn={nextTurn}
+                />
               </SheetContent>
             </Sheet>
           )}
@@ -315,19 +331,7 @@ export default function EmMesa() {
               <LogOut size={14} />
               <span className="hidden sm:inline">Abandonar</span>
             </Button>
-          )}
-
-          {isMobile && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={`transition-colors z-50 ${sidebarOpen ? 'text-white' : 'text-primary'}`} 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              <Users size={20}/>
-            </Button>
-          )}
-          
+          )}      
           <Button variant="ghost" size="sm" onClick={() => navigate("/mesas")} className="text-zinc-500 hover:text-white text-xs">Sair</Button>
         </div>
       </header>
@@ -335,10 +339,9 @@ export default function EmMesa() {
       <div className="flex-1 flex overflow-hidden relative">
         <main className="flex-1 relative flex flex-col min-w-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black overflow-hidden">
           
-          {/* ✨ BARRA DE AVENTURA (NOVA SEÇÃO ANTES DA HISTÓRIA) ✨ */}
+          {/* ✨ BARRA DE AVENTURA ✨ */}
           <div className="z-20 w-full bg-zinc-950/80 backdrop-blur-md border-b border-white/5 p-2 md:p-3 flex flex-col md:flex-row items-center justify-between gap-3 shrink-0 shadow-lg">
             
-            {/* 1. Esquerda: Botão do Mundo (Modal de Estado) */}
             <div className="w-full md:w-auto flex justify-center md:justify-start shrink-0">
               <TableStates state={state}>
                 <Button variant="outline" className="bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary gap-2 text-[10px] uppercase tracking-widest font-bold h-8 w-full md:w-auto">
@@ -348,28 +351,46 @@ export default function EmMesa() {
               </TableStates>
             </div>
 
-            {/* 2. Centro: Ordem de Turno / Iniciativa com SCROLL HORIZONTAL ✨ */}
-            {/* 🐛 CORREÇÃO AQUI: Removido o 'overflow-hidden' que estava a cortar e adicionado 'py-1' na div interna */}
-            <div className="flex items-center gap-2 bg-black/60 px-2 py-1 rounded-full border border-white/5 shadow-inner w-full md:max-w-md">
-               <div className="bg-primary/20 p-1.5 rounded-full shrink-0"><Sword size={14} className="text-primary" /></div>
+            <div className={`flex items-center gap-2 px-2 py-1.5 rounded-full border shadow-inner w-full md:max-w-lg transition-all duration-500 ${state?.isCombatActive ? 'bg-red-950/40 border-red-500/30' : 'bg-black/60 border-white/5'}`}>
+               <div className={`p-1.5 rounded-full shrink-0 transition-colors ${state?.isCombatActive ? 'bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-primary/20'}`}>
+                 <Sword size={14} className={state?.isCombatActive ? 'text-red-500 animate-pulse' : 'text-primary'} />
+               </div>
                
-               {/* Usamos overflow-x-auto e shrink-0 para evitar cortes nos avatares, e um pequeno py-1 para dar espaço à borda ring-2 */}
-               <div className="flex items-center gap-2 px-1 py-1 overflow-x-auto custom-scrollbar flex-1">
-                  {table.players?.map((p, i) => (
-                    <Avatar key={i} className={`h-7 w-7 md:h-8 md:w-8 border shrink-0 ${i === 0 ? 'border-primary ring-2 ring-primary/50 shadow-glow' : 'border-white/10 opacity-60 hover:opacity-100 transition-opacity cursor-pointer'}`}>
-                      <AvatarFallback className="text-[9px] md:text-[10px] bg-zinc-900">
-                        { 
-                        p.character?.avatarUrl && p.character?.avatarUrl.length <= 5 ?
-                          p.character?.avatarUrl :
-                          p.character?.firstName?.charAt(0).toUpperCase() || "U"
-                        }
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
+               <div className="flex items-center gap-2 px-1 overflow-x-auto flex-1 relative scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {(state?.isCombatActive && state.turnOrder && state.turnOrder.length > 0 ? state.turnOrder : table.players?.map(p => p.userId!))?.map((userId, i) => {
+                    const p = table.players?.find(pl => pl.userId === userId);
+                    if (!p) return null;
+                    
+                    const isTurn = state?.isCombatActive && i === state?.currentTurn;
+                    
+                    return (
+                      <div 
+                        key={userId} 
+                        className={`relative shrink-0 flex items-center gap-2 rounded-full transition-all duration-500 ${isTurn ? 'bg-red-500/20 border border-red-500/50 pr-3 pl-0.5 py-0.5 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : ''}`}
+                      >
+                        <div className="relative flex items-center justify-center shrink-0">
+                          {isTurn && (
+                            <div className="absolute inset-0 bg-red-500 rounded-full animate-pulse opacity-40 blur-sm" />
+                          )}
+                          <Avatar className={`relative h-7 w-7 md:h-8 md:w-8 transition-all duration-300 ${isTurn ? 'border-2 border-red-500 z-10' : 'border border-white/10 opacity-50 grayscale-[50%] hover:grayscale-0 hover:opacity-100 cursor-pointer'}`}>
+                            <AvatarImage src={p.character?.avatarUrl || undefined} className="object-cover" />
+                            <AvatarFallback className="text-[9px] md:text-[10px] bg-zinc-900 font-bold text-white">
+                              {p.character?.firstName?.charAt(0).toUpperCase() || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+
+                        {isTurn && (
+                          <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-wider truncate max-w-[100px] animate-in fade-in slide-in-from-left-2 duration-300">
+                            {p.character?.firstName}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                </div>
             </div>
 
-            {/* 3. Direita: Cena Atual */}
             <div className="w-full md:w-auto flex justify-center md:justify-end shrink-0 sm:flex">
                <Badge variant="outline" className="bg-black/40 border-primary/30 text-primary/80 text-[9px] uppercase tracking-[0.2em] py-1 truncate max-w-[200px]">
                  {state?.activeScene || "Exploração Livre"}
@@ -377,7 +398,6 @@ export default function EmMesa() {
             </div>
           </div>
 
-          {/* Marca d'água da Cena (Fundo) */}
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-[0.03] pointer-events-none z-0 mt-14">
              <ScrollText size={250} className="text-primary mb-8" />
              <h2 className="font-display text-4xl md:text-6xl font-bold uppercase tracking-[0.4em] text-center max-w-4xl px-4">
@@ -393,6 +413,8 @@ export default function EmMesa() {
               isGM={isGM}
               onSendMessage={sendMessage}
               onRollDice={rollDice}
+              onEditMessage={editMessage}
+              onDeleteMessage={deleteMessage}
             />
           </div>
         </main>
@@ -412,7 +434,7 @@ export default function EmMesa() {
               absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-500 z-50 cursor-pointer
               ${sidebarOpen 
                 ? '-left-4 h-9 w-9 bg-zinc-800 border border-white/10 rounded-full text-zinc-400 hover:text-white shadow-xl rotate-0' 
-                : '-left-8 h-20 w-8 bg-primary/20 border-y border-l border-primary/30 rounded-l-2xl text-primary hover:bg-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.2)]'}
+                : '-left-8 h-20 w-8 bg-zinc-950 border-y border-l border-primary/50 rounded-l-2xl text-primary hover:bg-zinc-900 shadow-[0_0_15px_rgba(0,0,0,0.8)]'}
             `}
           >
             {sidebarOpen ? <ChevronRight size={20} className="mr-0.5" /> : <Users size={18} className="ml-1" />}
@@ -432,7 +454,7 @@ export default function EmMesa() {
         onConfirm={() => playerToRemove && handleRemovePlayer(playerToRemove.id)} 
         title={playerToRemove?.id === user?.id ? "Abandonar Sessão?" : "Expulsar Jogador?"}
         description={playerToRemove?.id === user?.id 
-          ? "Tens a certeza que desejas abandonar esta jornada?" 
+          ? "Tem certeza que deseja abandonar esta jornada?" 
           : `Deseja remover ${playerToRemove?.name} desta aventura permanentemente?`
         }
       />
