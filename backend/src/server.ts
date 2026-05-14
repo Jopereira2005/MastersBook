@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
 import { httpServer, io } from './app.js';
 import { prisma } from './database/prisma.js';
+
+// 👇 1. Importação do nosso motor de física (dados)
+import { rollDice } from './utils/dice-roller.js'; 
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -50,6 +54,42 @@ io.on('connection', (socket) => {
       
     } catch (error) {
       console.error('❌ [Socket] Erro ao processar mensagem:', error);
+    }
+  });
+
+  // 👇 3. NOVO: Sistema de Rolagem de Dados (DICE)
+  socket.on('roll_dice', async (data: { 
+    tableId: string, 
+    userId: string, 
+    characterId?: string, 
+    notation: string 
+  }) => {
+    try {
+      // O Backend faz a rolagem real chamando o utilitário
+      const diceResult = rollDice(data.notation);
+
+      // Salva o resultado no banco como uma mensagem do tipo DICE
+      const diceMessage = await prisma.message.create({
+        data: {
+          tableId: data.tableId,
+          userId: data.userId,
+          characterId: data.characterId || null,
+          content: diceResult.content, // Ex: "Rolou 1d20+5: **18** [13]"
+          type: 'DICE'
+        },
+        include: {
+          user: { select: { username: true, avatarUrl: true } },
+          character: { select: { firstName: true, avatarUrl: true } }
+        }
+      });
+
+      // 📢 Envia o resultado para toda a mesa ver ao mesmo tempo!
+      io.to(data.tableId).emit('new_message', diceMessage);
+
+    } catch (error: any) {
+      // Se a notação for inválida, devolve um erro apenas para quem tentou rolar
+      // O Front-end pode ouvir esse evento e disparar um Toast de erro
+      socket.emit('system_error', { message: error.message || 'Erro ao rolar dados.' });
     }
   });
 
